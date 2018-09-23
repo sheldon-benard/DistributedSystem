@@ -327,33 +327,17 @@ public class ResourceManager implements IResourceManager
 
 	public boolean deleteCustomer(int xid, int customerID) throws RemoteException
 	{
-		Trace.info("RM::deleteCustomer(" + xid + ", " + customerID + ") called");
-		Customer customer = (Customer)readData(xid, Customer.getKey(customerID));
-		if (customer == null)
-		{
-			Trace.warn("RM::deleteCustomer(" + xid + ", " + customerID + ") failed--customer doesn't exist");
-			return false;
-		}
-		else
-		{            
-			// Increase the reserved numbers of all reservable items which the customer reserved. 
- 			RMHashMap reservations = customer.getReservations();
-			for (String reservedKey : reservations.keySet())
-			{        
-				ReservedItem reserveditem = customer.getReservedItem(reservedKey);
-				Trace.info("RM::deleteCustomer(" + xid + ", " + customerID + ") has reserved " + reserveditem.getKey() + " " +  reserveditem.getCount() +  " times");
-				ReservableItem item  = (ReservableItem)readData(xid, reserveditem.getKey());
-				Trace.info("RM::deleteCustomer(" + xid + ", " + customerID + ") has reserved " + reserveditem.getKey() + " which is reserved " +  item.getReserved() +  " times and is still available " + item.getCount() + " times");
-				item.setReserved(item.getReserved() - reserveditem.getCount());
-				item.setCount(item.getCount() + reserveditem.getCount());
-				writeData(xid, item.getKey(), item);
-			}
+		return false;
+	}
 
-			// Remove the customer from the storage
-			removeData(xid, customer.getKey());
-			Trace.info("RM::deleteCustomer(" + xid + ", " + customerID + ") succeeded");
-			return true;
-		}
+	public boolean removeReservation(int xid, int customerID, String reserveditemKey, int reserveditemCount) throws RemoteException {
+		Trace.info("RM::deleteCustomer(" + xid + ", " + customerID + ") has reserved " + reserveditemKey + " " +  reserveditemCount +  " times");
+		ReservableItem item  = (ReservableItem)readData(xid, reserveditemKey);
+		Trace.info("RM::deleteCustomer(" + xid + ", " + customerID + ") has reserved " + reserveditemKey + " which is reserved " +  item.getReserved() +  " times and is still available " + item.getCount() + " times");
+		item.setReserved(item.getReserved() - reserveditemCount);
+		item.setCount(item.getCount() + reserveditemCount);
+		writeData(xid, item.getKey(), item);
+		return true;
 	}
 
 	// Adds flight reservation to this customer

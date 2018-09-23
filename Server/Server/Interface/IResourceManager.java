@@ -2,7 +2,6 @@ package Server.Interface;
 
 import java.rmi.Remote;
 import java.rmi.RemoteException;
-
 import java.util.*;
 
 /** 
@@ -106,12 +105,21 @@ public interface IResourceManager extends Remote
 	throws RemoteException; 
     
     /**
-     * Delete a customer and associated reservations.
+     * Delete a customer
      *
      * @return Success
      */
     public boolean deleteCustomer(int id, int customerID) 
-	throws RemoteException; 
+	throws RemoteException;
+
+    /**
+     * Delete associated reservations.
+     *
+     * @return Success
+     */
+    public boolean removeReservation(int xid, int customerID, String reserveditemKey, int reserveditemCount)
+            throws RemoteException;
+
 
     /**
      * Query the status of a flight.

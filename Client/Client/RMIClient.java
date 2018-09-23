@@ -16,8 +16,7 @@ public class RMIClient extends Client
 	private static int s_serverPort = 1099;
 	private static String s_serverName = "Server";
 
-	//TODO: REPLACE 'ALEX' WITH YOUR GROUP NUMBER TO COMPILE
-	// private static String s_rmiPrefix = "groupAlex_";
+	private static String s_rmiPrefix = "group7";
 
 	public static void main(String args[])
 	{	

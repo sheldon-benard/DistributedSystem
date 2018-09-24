@@ -105,43 +105,38 @@ public class ResourceManager implements IResourceManager
 	}
 
 	// Reserve an item
-	protected boolean reserveItem(int xid, int customerID, String key, String location)
+	public boolean reserveItem(int xid, int customerID, String key, String location)
 	{
-		Trace.info("RM::reserveItem(" + xid + ", customer=" + customerID + ", " + key + ", " + location + ") called" );        
-		// Read customer object if it exists (and read lock it)
-		Customer customer = (Customer)readData(xid, Customer.getKey(customerID));
-		if (customer == null)
-		{
-			Trace.warn("RM::reserveItem(" + xid + ", " + customerID + ", " + key + ", " + location + ")  failed--customer doesn't exist");
+		if (itemAvailable(xid, key) < 0)
 			return false;
-		} 
+		ReservableItem item = (ReservableItem)readData(xid,key);
+		// Decrease the number of available items in the storage
+		item.setCount(item.getCount() - 1);
+		item.setReserved(item.getReserved() + 1);
+		writeData(xid, item.getKey(), item);
 
+		Trace.info("RM::reserveItem(" + xid + ", " + customerID + ", " + key + ", " + location + ") succeeded");
+		return true;
+
+	}
+
+	public int itemAvailable(int xid, String key) {
 		// Check if the item is available
 		ReservableItem item = (ReservableItem)readData(xid, key);
 		if (item == null)
 		{
-			Trace.warn("RM::reserveItem(" + xid + ", " + customerID + ", " + key + ", " + location + ") failed--item doesn't exist");
-			return false;
+			Trace.warn("RM::reserveItem(" + xid + ", " + key + ") failed--item doesn't exist");
+			return -1;
 		}
 		else if (item.getCount() == 0)
 		{
-			Trace.warn("RM::reserveItem(" + xid + ", " + customerID + ", " + key + ", " + location + ") failed--No more items");
-			return false;
+			Trace.warn("RM::reserveItem(" + xid + ", " + key + ") failed--No more items");
+			return -1;
 		}
-		else
-		{            
-			customer.reserve(key, location, item.getPrice());        
-			writeData(xid, customer.getKey(), customer);
 
-			// Decrease the number of available items in the storage
-			item.setCount(item.getCount() - 1);
-			item.setReserved(item.getReserved() + 1);
-			writeData(xid, item.getKey(), item);
-
-			Trace.info("RM::reserveItem(" + xid + ", " + customerID + ", " + key + ", " + location + ") succeeded");
-			return true;
-		}        
+		return item.getPrice();
 	}
+
 
 	// Create a new flight, or add seats to existing flight
 	// NOTE: if flightPrice <= 0 and the flight already exists, it maintains its current price

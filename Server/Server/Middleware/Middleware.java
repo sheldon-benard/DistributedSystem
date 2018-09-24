@@ -30,7 +30,7 @@ public class Middleware extends ResourceManager {
         super(p_name);
     }
 
-    public boolean addFlight(int id, int flightNum, int flightSeats, int flightPrice) throws RemoteException {
+    public synchronized boolean addFlight(int id, int flightNum, int flightSeats, int flightPrice) throws RemoteException {
         Trace.info("addFlight - Redirect to Flight Resource Manager");
         try {
             return m_flightResourceManager.addFlight(id, flightNum, flightSeats, flightPrice);
@@ -232,14 +232,92 @@ public class Middleware extends ResourceManager {
         }
     }
 
-    public boolean reserveFlight(int id, int customerID, int flightNumber) throws RemoteException
-    {return false;}
+    public boolean reserveFlight(int xid, int customerID, int flightNumber) throws RemoteException
+    {
+        String key = Flight.getKey(flightNumber);
 
-    public boolean reserveCar(int id, int customerID, String location) throws RemoteException
-    {return false;}
+        Trace.info("RM::reserveFlight(" + xid + ", customer=" + customerID + ", " + flightNumber + ") called" );
+        // Check customer exists
+        Customer customer = (Customer)readData(xid, Customer.getKey(customerID));
+        if (customer == null)
+        {
+            Trace.warn("RM::reserveItem(" + xid + ", " + customerID + ", " + flightNumber + ")  failed--customer doesn't exist");
+            return false;
+        }
 
-    public boolean reserveRoom(int id, int customerID, String location) throws RemoteException
-    {return false;}
+        int price = m_flightResourceManager.itemAvailable(xid,key);
+
+        if (price < 0) {
+            Trace.warn("RM::reserveItem(" + xid + ", " + customerID + ", " + flightNumber + ")  failed--item unavailable");
+            return false;
+        }
+
+        if (m_flightResourceManager.reserveFlight(xid, customerID, flightNumber)) {
+            customer.reserve(key, String.valueOf(flightNumber), price);
+            writeData(xid, customer.getKey(), customer);
+            return true;
+        }
+        Trace.warn("RM::reserveItem(" + xid + ", " + customerID + ", " + flightNumber + ")  failed--Could not reserve item");
+        return false;
+    }
+
+    public boolean reserveCar(int xid, int customerID, String location) throws RemoteException
+    {
+        String key = Car.getKey(location);
+
+        Trace.info("RM::reserveCar(" + xid + ", customer=" + customerID + ", " + location + ") called" );
+        // Check customer exists
+        Customer customer = (Customer)readData(xid, Customer.getKey(customerID));
+        if (customer == null)
+        {
+            Trace.warn("RM::reserveItem(" + xid + ", " + customerID + ", " + location + ")  failed--customer doesn't exist");
+            return false;
+        }
+
+        int price = m_carResourceManager.itemAvailable(xid,key);
+
+        if (price < 0) {
+            Trace.warn("RM::reserveItem(" + xid + ", " + customerID + ", " + location + ")  failed--item unavailable");
+            return false;
+        }
+
+        if (m_carResourceManager.reserveCar(xid, customerID, location)) {
+            customer.reserve(key, location, price);
+            writeData(xid, key, customer);
+            return true;
+        }
+        Trace.warn("RM::reserveItem(" + xid + ", " + customerID + ", " + location + ")  failed--Could not reserve item");
+        return false;
+    }
+
+    public boolean reserveRoom(int xid, int customerID, String location) throws RemoteException
+    {
+        String key = Room.getKey(location);
+
+        Trace.info("RM::reserveRoom(" + xid + ", customer=" + customerID + ", " + location + ") called" );
+        // Check customer exists
+        Customer customer = (Customer)readData(xid, Customer.getKey(customerID));
+        if (customer == null)
+        {
+            Trace.warn("RM::reserveItem(" + xid + ", " + customerID + ", " + location + ")  failed--customer doesn't exist");
+            return false;
+        }
+
+        int price = m_roomResourceManager.itemAvailable(xid,key);
+
+        if (price < 0) {
+            Trace.warn("RM::reserveItem(" + xid + ", " + customerID + ", " + location + ")  failed--item unavailable");
+            return false;
+        }
+
+        if (m_roomResourceManager.reserveRoom(xid, customerID, location)) {
+            customer.reserve(key, location, price);
+            writeData(xid, customer.getKey(), customer);
+            return true;
+        }
+        Trace.warn("RM::reserveItem(" + xid + ", " + customerID + ", " + location + ")  failed--Could not reserve item");
+        return false;
+    }
 
     public boolean bundle(int id, int customerID, Vector<String> flightNumbers, String location, boolean car, boolean room) throws RemoteException
     {return false;}

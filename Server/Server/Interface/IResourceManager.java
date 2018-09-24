@@ -121,6 +121,7 @@ public interface IResourceManager extends Remote
             throws RemoteException;
 
 
+
     /**
      * Query the status of a flight.
      *
@@ -193,13 +194,21 @@ public interface IResourceManager extends Remote
     public boolean reserveCar(int id, int customerID, String location) 
 	throws RemoteException; 
 
-    /**
+        /**
      * Reserve a room at this location.
      *
      * @return Success
      */
-    public boolean reserveRoom(int id, int customerID, String location) 
-	throws RemoteException; 
+    public boolean reserveRoom(int id, int customerID, String location)
+            throws RemoteException;
+
+    /**
+     * Check item availability
+     *
+     * @return price of the item
+     */
+    public int itemAvailable(int xid, String key)
+            throws RemoteException;
 
     /**
      * Reserve a bundle for the trip.

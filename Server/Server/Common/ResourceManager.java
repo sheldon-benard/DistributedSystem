@@ -107,7 +107,7 @@ public class ResourceManager implements IResourceManager
 	// Reserve an item
 	public boolean reserveItem(int xid, int customerID, String key, String location)
 	{
-		if (itemAvailable(xid, key) < 0)
+		if (itemsAvailable(xid, key,1) < 0)
 			return false;
 		ReservableItem item = (ReservableItem)readData(xid,key);
 		// Decrease the number of available items in the storage
@@ -120,7 +120,7 @@ public class ResourceManager implements IResourceManager
 
 	}
 
-	public int itemAvailable(int xid, String key) {
+	public int itemsAvailable(int xid, String key, int quantity) {
 		// Check if the item is available
 		ReservableItem item = (ReservableItem)readData(xid, key);
 		if (item == null)
@@ -128,9 +128,9 @@ public class ResourceManager implements IResourceManager
 			Trace.warn("RM::reserveItem(" + xid + ", " + key + ") failed--item doesn't exist");
 			return -1;
 		}
-		else if (item.getCount() == 0)
+		else if (item.getCount() < quantity)
 		{
-			Trace.warn("RM::reserveItem(" + xid + ", " + key + ") failed--No more items");
+			Trace.warn("RM::reserveItem(" + xid + ", " + key + ") failed--Not enough items");
 			return -1;
 		}
 

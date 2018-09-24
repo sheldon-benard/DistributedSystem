@@ -207,7 +207,7 @@ public interface IResourceManager extends Remote
      *
      * @return price of the item
      */
-    public int itemAvailable(int xid, String key)
+    public int itemsAvailable(int xid, String key, int quantity)
             throws RemoteException;
 
     /**

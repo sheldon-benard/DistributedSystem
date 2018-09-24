@@ -391,8 +391,8 @@ public abstract class Client
 				{
 					System.out.println("-Flight Number: " + arguments.elementAt(3+i));
 				}
-				System.out.println("-Car Location: " + arguments.elementAt(arguments.size()-2));
-				System.out.println("-Room Location: " + arguments.elementAt(arguments.size()-1));
+				System.out.println("-Car Location: " + arguments.elementAt(arguments.size()-3));
+				System.out.println("-Room Location: " + arguments.elementAt(arguments.size()-3));
 
 				int id = toInt(arguments.elementAt(1));
 				int customerID = toInt(arguments.elementAt(2));
@@ -401,10 +401,10 @@ public abstract class Client
 				{
 					flightNumbers.addElement(arguments.elementAt(3+i));
 				}
-				String location = arguments.elementAt(arguments.size()-2);
+				String location = arguments.elementAt(arguments.size()-3);
 				boolean car = toBoolean(arguments.elementAt(arguments.size()-2));
 				boolean room = toBoolean(arguments.elementAt(arguments.size()-1));
-
+				System.out.println("Reserve car: " + car + "; Reserve room: " + room);
 				if (m_resourceManager.bundle(id, customerID, flightNumbers, location, car, room)) {
 					System.out.println("Bundle Reserved");
 				} else {
@@ -449,6 +449,6 @@ public abstract class Client
 
 	public static boolean toBoolean(String string)// throws Exception
 	{
-		return (new Boolean(string)).booleanValue();
+		return string.equals("1");
 	}
 }

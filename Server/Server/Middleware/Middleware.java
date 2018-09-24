@@ -236,7 +236,7 @@ public class Middleware extends ResourceManager {
     {
         String key = Flight.getKey(flightNumber);
 
-        Trace.info("RM::reserveFlight(" + xid + ", customer=" + customerID + ", " + flightNumber + ") called" );
+        Trace.info("RM::reserveFlight(" + xid + ", customer=" + customerID + ", " + key + ") called" );
         // Check customer exists
         Customer customer = (Customer)readData(xid, Customer.getKey(customerID));
         if (customer == null)
@@ -265,7 +265,7 @@ public class Middleware extends ResourceManager {
     {
         String key = Car.getKey(location);
 
-        Trace.info("RM::reserveCar(" + xid + ", customer=" + customerID + ", " + location + ") called" );
+        Trace.info("RM::reserveCar(" + xid + ", customer=" + customerID + ", " + key + ") called" );
         // Check customer exists
         Customer customer = (Customer)readData(xid, Customer.getKey(customerID));
         if (customer == null)
@@ -283,7 +283,7 @@ public class Middleware extends ResourceManager {
 
         if (m_carResourceManager.reserveCar(xid, customerID, location)) {
             customer.reserve(key, location, price);
-            writeData(xid, key, customer);
+            writeData(xid, customer.getKey(), customer);
             return true;
         }
         Trace.warn("RM::reserveItem(" + xid + ", " + customerID + ", " + location + ")  failed--Could not reserve item");
@@ -294,7 +294,7 @@ public class Middleware extends ResourceManager {
     {
         String key = Room.getKey(location);
 
-        Trace.info("RM::reserveRoom(" + xid + ", customer=" + customerID + ", " + location + ") called" );
+        Trace.info("RM::reserveRoom(" + xid + ", customer=" + customerID + ", " + key + ") called" );
         // Check customer exists
         Customer customer = (Customer)readData(xid, Customer.getKey(customerID));
         if (customer == null)

@@ -30,7 +30,7 @@ public class Middleware extends ResourceManager {
         super(p_name);
     }
 
-    public synchronized boolean addFlight(int id, int flightNum, int flightSeats, int flightPrice) throws RemoteException {
+    public boolean addFlight(int id, int flightNum, int flightSeats, int flightPrice) throws RemoteException {
         Trace.info("addFlight - Redirect to Flight Resource Manager");
         try {
             return m_flightResourceManager.addFlight(id, flightNum, flightSeats, flightPrice);

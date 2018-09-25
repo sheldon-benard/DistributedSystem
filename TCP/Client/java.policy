@@ -1,3 +1,0 @@
-grant codebase "file:C:/Users/Sheldon Benard/Desktop/Git/DistributedSystem/TCP/Client/" {
-permission java.security.AllPermission;
-};

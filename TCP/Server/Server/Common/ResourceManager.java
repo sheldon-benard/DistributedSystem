@@ -5,13 +5,11 @@
 
 package Server.Common;
 
-import Server.Interface.*;
-
+import java.lang.reflect.Method;
 import java.util.*;
-import java.rmi.RemoteException;
 import java.io.*;
 
-public class ResourceManager implements IResourceManager
+public class ResourceManager
 {
 	protected String m_name = "";
 	protected RMHashMap m_data = new RMHashMap();
@@ -31,6 +29,10 @@ public class ResourceManager implements IResourceManager
 			}
 			return null;
 		}
+	}
+
+	protected String execute(Vector<String> command) {
+		return Execution.execute(this,command);
 	}
 
 	// Writes a data item
@@ -140,7 +142,7 @@ public class ResourceManager implements IResourceManager
 
 	// Create a new flight, or add seats to existing flight
 	// NOTE: if flightPrice <= 0 and the flight already exists, it maintains its current price
-	public boolean addFlight(int xid, int flightNum, int flightSeats, int flightPrice) throws RemoteException
+	public boolean addFlight(int xid, int flightNum, int flightSeats, int flightPrice)
 	{
 		Trace.info("RM::addFlight(" + xid + ", " + flightNum + ", " + flightSeats + ", $" + flightPrice + ") called");
 		Flight curObj = (Flight)readData(xid, Flight.getKey(flightNum));
@@ -167,7 +169,7 @@ public class ResourceManager implements IResourceManager
 
 	// Create a new car location or add cars to an existing location
 	// NOTE: if price <= 0 and the location already exists, it maintains its current price
-	public boolean addCars(int xid, String location, int count, int price) throws RemoteException
+	public boolean addCars(int xid, String location, int count, int price)
 	{
 		Trace.info("RM::addCars(" + xid + ", " + location + ", " + count + ", $" + price + ") called");
 		Car curObj = (Car)readData(xid, Car.getKey(location));
@@ -194,7 +196,7 @@ public class ResourceManager implements IResourceManager
 
 	// Create a new room location or add rooms to an existing location
 	// NOTE: if price <= 0 and the room location already exists, it maintains its current price
-	public boolean addRooms(int xid, String location, int count, int price) throws RemoteException
+	public boolean addRooms(int xid, String location, int count, int price)
 	{
 		Trace.info("RM::addRooms(" + xid + ", " + location + ", " + count + ", $" + price + ") called");
 		Room curObj = (Room)readData(xid, Room.getKey(location));
@@ -218,60 +220,60 @@ public class ResourceManager implements IResourceManager
 	}
 
 	// Deletes flight
-	public boolean deleteFlight(int xid, int flightNum) throws RemoteException
+	public boolean deleteFlight(int xid, int flightNum)
 	{
 		return deleteItem(xid, Flight.getKey(flightNum));
 	}
 
 	// Delete cars at a location
-	public boolean deleteCars(int xid, String location) throws RemoteException
+	public boolean deleteCars(int xid, String location)
 	{
 		return deleteItem(xid, Car.getKey(location));
 	}
 
 	// Delete rooms at a location
-	public boolean deleteRooms(int xid, String location) throws RemoteException
+	public boolean deleteRooms(int xid, String location)
 	{
 		return deleteItem(xid, Room.getKey(location));
 	}
 
 	// Returns the number of empty seats in this flight
-	public int queryFlight(int xid, int flightNum) throws RemoteException
+	public int queryFlight(int xid, int flightNum)
 	{
 		return queryNum(xid, Flight.getKey(flightNum));
 	}
 
 	// Returns the number of cars available at a location
-	public int queryCars(int xid, String location) throws RemoteException
+	public int queryCars(int xid, String location)
 	{
 		return queryNum(xid, Car.getKey(location));
 	}
 
 	// Returns the amount of rooms available at a location
-	public int queryRooms(int xid, String location) throws RemoteException
+	public int queryRooms(int xid, String location)
 	{
 		return queryNum(xid, Room.getKey(location));
 	}
 
 	// Returns price of a seat in this flight
-	public int queryFlightPrice(int xid, int flightNum) throws RemoteException
+	public int queryFlightPrice(int xid, int flightNum)
 	{
 		return queryPrice(xid, Flight.getKey(flightNum));
 	}
 
 	// Returns price of cars at this location
-	public int queryCarsPrice(int xid, String location) throws RemoteException
+	public int queryCarsPrice(int xid, String location)
 	{
 		return queryPrice(xid, Car.getKey(location));
 	}
 
 	// Returns room price at this location
-	public int queryRoomsPrice(int xid, String location) throws RemoteException
+	public int queryRoomsPrice(int xid, String location)
 	{
 		return queryPrice(xid, Room.getKey(location));
 	}
 
-	public String queryCustomerInfo(int xid, int customerID) throws RemoteException
+	public String queryCustomerInfo(int xid, int customerID)
 	{
 		Trace.info("RM::queryCustomerInfo(" + xid + ", " + customerID + ") called");
 		Customer customer = (Customer)readData(xid, Customer.getKey(customerID));
@@ -289,7 +291,7 @@ public class ResourceManager implements IResourceManager
 		}
 	}
 
-	public int newCustomer(int xid) throws RemoteException
+	public int newCustomer(int xid)
 	{
         	Trace.info("RM::newCustomer(" + xid + ") called");
 		// Generate a globally unique ID for the new customer
@@ -302,7 +304,7 @@ public class ResourceManager implements IResourceManager
 		return cid;
 	}
 
-	public boolean newCustomer(int xid, int customerID) throws RemoteException
+	public boolean newCustomer(int xid, int customerID)
 	{
 		Trace.info("RM::newCustomer(" + xid + ", " + customerID + ") called");
 		Customer customer = (Customer)readData(xid, Customer.getKey(customerID));
@@ -320,12 +322,12 @@ public class ResourceManager implements IResourceManager
 		}
 	}
 
-	public boolean deleteCustomer(int xid, int customerID) throws RemoteException
+	public boolean deleteCustomer(int xid, int customerID)
 	{
 		return false;
 	}
 
-	public boolean removeReservation(int xid, int customerID, String reserveditemKey, int reserveditemCount) throws RemoteException {
+	public boolean removeReservation(int xid, int customerID, String reserveditemKey, int reserveditemCount)  {
 		Trace.info("RM::deleteCustomer(" + xid + ", " + customerID + ") has reserved " + reserveditemKey + " " +  reserveditemCount +  " times");
 		ReservableItem item  = (ReservableItem)readData(xid, reserveditemKey);
 		Trace.info("RM::deleteCustomer(" + xid + ", " + customerID + ") has reserved " + reserveditemKey + " which is reserved " +  item.getReserved() +  " times and is still available " + item.getCount() + " times");
@@ -336,30 +338,30 @@ public class ResourceManager implements IResourceManager
 	}
 
 	// Adds flight reservation to this customer
-	public boolean reserveFlight(int xid, int customerID, int flightNum) throws RemoteException
+	public boolean reserveFlight(int xid, int customerID, int flightNum)
 	{
 		return reserveItem(xid, customerID, Flight.getKey(flightNum), String.valueOf(flightNum));
 	}
 
 	// Adds car reservation to this customer
-	public boolean reserveCar(int xid, int customerID, String location) throws RemoteException
+	public boolean reserveCar(int xid, int customerID, String location)
 	{
 		return reserveItem(xid, customerID, Car.getKey(location), location);
 	}
 
 	// Adds room reservation to this customer
-	public boolean reserveRoom(int xid, int customerID, String location) throws RemoteException
+	public boolean reserveRoom(int xid, int customerID, String location)
 	{
 		return reserveItem(xid, customerID, Room.getKey(location), location);
 	}
 
 	// Reserve bundle 
-	public boolean bundle(int xid, int customerId, Vector<String> flightNumbers, String location, boolean car, boolean room) throws RemoteException
+	public boolean bundle(int xid, int customerId, Vector<String> flightNumbers, String location, boolean car, boolean room)
 	{
 		return false;
 	}
 
-	public String getName() throws RemoteException
+	public String getName()
 	{
 		return m_name;
 	}

@@ -8,9 +8,9 @@ java.policy: FORCE
 
 FORCE: ;
 
-compile-server-TCP: Server/TCP/*.java Server/Interface/IResourceManager.java Server/Common/*.java Server/Middleware/*.java
-	javac Server/TCP/*.java Server/Interface/IResourceManager.java Server/Common/*.java Server/Middleware/*.java
+compile-server-TCP: Server/TCP/*.java Server/Common/*.java Server/Middleware/*.java
+	javac Server/TCP/*.java Server/Common/*.java Server/Middleware/*.java
 
 clean:
-	rm -f Server/Interface/*.class Server/Common/*.class Server/TCP/*.class Server/Middleware/*.class
+	rm -f Server/Common/*.class Server/TCP/*.class Server/Middleware/*.class
 	rm -f java.policy 

@@ -1,58 +1,58 @@
 package Server.Middleware;
 
-import Server.Interface.*;
 import Server.Common.*;
 import Server.Middleware.ServerConfig;
 import java.util.Vector;
-import java.rmi.RemoteException;
-import java.rmi.ConnectException;
-
-import java.rmi.NotBoundException;
 import java.util.*;
-
-import java.rmi.registry.Registry;
-import java.rmi.registry.LocateRegistry;
-import java.rmi.RemoteException;
-import java.rmi.server.UnicastRemoteObject;
+import java.net.*;
+import java.io.*;
 
 public class Middleware extends ResourceManager {
 
-    protected IResourceManager m_flightResourceManager = null;
-    protected IResourceManager m_carResourceManager = null;
-    protected IResourceManager m_roomResourceManager = null;
+    protected TCPClient m_flightResourceManager = null;
+    protected TCPClient m_carResourceManager = null;
+    protected TCPClient m_roomResourceManager = null;
 
-    protected static ServerConfig s_flightServer;
-    protected static ServerConfig s_carServer;
-    protected static ServerConfig s_roomServer;
-
-    public Middleware(String p_name)
+    public Middleware(String p_name, String flightIP, int flightPort, String carIP, int carPort, String roomIP, int roomPort)
     {
         super(p_name);
+        m_flightResourceManager = new TCPClient(flightIP,flightPort);
+        m_carResourceManager = new TCPClient(carIP,carPort);
+        m_roomResourceManager = new TCPClient(roomIP,roomPort);
     }
 
-    public boolean addFlight(int id, int flightNum, int flightSeats, int flightPrice) throws RemoteException {
+    public void close() {
+        m_flightResourceManager.stopTCPClient();
+        m_carResourceManager.stopTCPClient();
+        m_roomResourceManager.stopTCPClient();
+    }
+
+    public boolean addFlight(int id, int flightNum, int flightSeats, int flightPrice){
         Trace.info("addFlight - Redirect to Flight Resource Manager");
+        String command = String.format("AddFlight,%d,%d,%d,%d",id,flightNum,flightSeats,flightPrice);
 
         synchronized (m_flightResourceManager) {
             try {
-                return m_flightResourceManager.addFlight(id, flightNum, flightSeats, flightPrice);
-            } catch (ConnectException e) {
-                connectServer("Flight", s_flightServer.host, s_flightServer.port, s_flightServer.name);
-                return m_flightResourceManager.addFlight(id, flightNum, flightSeats, flightPrice);
-            } catch (Exception e) {
+                try {
+                    return toBool(m_flightResourceManager.sendMessage(command));
+                } catch (IOException e) {
+                    m_flightResourceManager.connect();
+                    return toBool(m_flightResourceManager.sendMessage(command));
+                }
+            } catch(Exception e) {
                 Trace.error(e.toString());
                 return false;
             }
         }
     }
 
-    public boolean addCars(int id, String location, int numCars, int price) throws RemoteException
+    /*public boolean addCars(int id, String location, int numCars, int price)
     {
         synchronized (m_carResourceManager) {
             Trace.info("addCars - Redirect to Car Resource Manager");
             try {
                 return m_carResourceManager.addCars(id, location, numCars, price);
-            } catch (ConnectException e) {
+            } catch (IOException e) {
                 connectServer("Car", s_carServer.host, s_carServer.port, s_carServer.name);
                 return m_carResourceManager.addCars(id, location, numCars, price);
             } catch (Exception e) {
@@ -63,13 +63,13 @@ public class Middleware extends ResourceManager {
 
     }
 
-    public boolean addRooms(int id, String location, int numRooms, int price) throws RemoteException
+    public boolean addRooms(int id, String location, int numRooms, int price)
     {
         synchronized (m_roomResourceManager) {
             Trace.info("addRooms - Redirect to Room Resource Manager");
             try {
                 return m_roomResourceManager.addRooms(id, location, numRooms, price);
-            } catch (ConnectException e) {
+            } catch (IOException e) {
                 connectServer("Room", s_roomServer.host, s_roomServer.port, s_roomServer.name);
                 return m_roomResourceManager.addRooms(id, location, numRooms, price);
             } catch (Exception e) {
@@ -79,13 +79,13 @@ public class Middleware extends ResourceManager {
         }
     }
 
-    public boolean deleteFlight(int id, int flightNum) throws RemoteException
+    public boolean deleteFlight(int id, int flightNum)
     {
         synchronized (m_flightResourceManager) {
             Trace.info("deleteFlight - Redirect to Flight Resource Manager");
             try {
                 return m_flightResourceManager.deleteFlight(id, flightNum);
-            } catch (ConnectException e) {
+            } catch (IOException e) {
                 connectServer("Flight", s_flightServer.host, s_flightServer.port, s_flightServer.name);
                 return m_flightResourceManager.deleteFlight(id, flightNum);
             } catch (Exception e) {
@@ -95,13 +95,13 @@ public class Middleware extends ResourceManager {
         }
     }
 
-    public boolean deleteCars(int id, String location) throws RemoteException
+    public boolean deleteCars(int id, String location)
     {
         synchronized (m_carResourceManager) {
             Trace.info("deleteCars - Redirect to Car Resource Manager");
             try {
                 return m_carResourceManager.deleteCars(id, location);
-            } catch (ConnectException e) {
+            } catch (IOException e) {
                 connectServer("Car", s_carServer.host, s_carServer.port, s_carServer.name);
                 return m_carResourceManager.deleteCars(id, location);
             } catch (Exception e) {
@@ -111,13 +111,13 @@ public class Middleware extends ResourceManager {
         }
     }
 
-    public boolean deleteRooms(int id, String location) throws RemoteException
+    public boolean deleteRooms(int id, String location)
     {
         synchronized (m_roomResourceManager) {
             Trace.info("deleteRooms - Redirect to Room Resource Manager");
             try {
                 return m_roomResourceManager.deleteRooms(id, location);
-            } catch (ConnectException e) {
+            } catch (IOException e) {
                 connectServer("Room", s_roomServer.host, s_roomServer.port, s_roomServer.name);
                 return m_roomResourceManager.deleteRooms(id, location);
             } catch (Exception e) {
@@ -127,7 +127,7 @@ public class Middleware extends ResourceManager {
         }
     }
 
-    public boolean deleteCustomer(int xid, int customerID) throws RemoteException
+    public boolean deleteCustomer(int xid, int customerID)
     {
         Trace.info("RM::deleteCustomer(" + xid + ", " + customerID + ") called");
         Customer customer = (Customer)readData(xid, Customer.getKey(customerID));
@@ -170,12 +170,12 @@ public class Middleware extends ResourceManager {
 
     }
 
-    public int queryFlight(int id, int flightNumber) throws RemoteException
+    public int queryFlight(int id, int flightNumber)
     {
         Trace.info("queryFlight - Redirect to Flight Resource Manager");
         try {
             return m_flightResourceManager.queryFlight(id, flightNumber);
-        } catch (ConnectException e) {
+        } catch (IOException e) {
             connectServer("Flight", s_flightServer.host, s_flightServer.port, s_flightServer.name);
             return m_flightResourceManager.queryFlight(id, flightNumber);
         } catch (Exception e) {
@@ -184,12 +184,12 @@ public class Middleware extends ResourceManager {
         }
     }
 
-    public int queryCars(int id, String location) throws RemoteException
+    public int queryCars(int id, String location)
     {
         Trace.info("queryCars - Redirect to Car Resource Manager");
         try {
             return m_carResourceManager.queryCars(id, location);
-        } catch (ConnectException e) {
+        } catch (IOException e) {
             connectServer("Car", s_carServer.host, s_carServer.port, s_carServer.name);
             return m_carResourceManager.queryCars(id, location);
         } catch (Exception e) {
@@ -198,12 +198,12 @@ public class Middleware extends ResourceManager {
         }
     }
 
-    public int queryRooms(int id, String location) throws RemoteException
+    public int queryRooms(int id, String location)
     {
         Trace.info("queryRooms - Redirect to Room Resource Manager");
         try {
             return m_roomResourceManager.queryRooms(id, location);
-        } catch (ConnectException e) {
+        } catch (IOException e) {
             connectServer("Room", s_roomServer.host, s_roomServer.port, s_roomServer.name);
             return m_roomResourceManager.queryRooms(id, location);
         } catch (Exception e) {
@@ -212,12 +212,12 @@ public class Middleware extends ResourceManager {
         }
     }
 
-    public int queryFlightPrice(int id, int flightNumber) throws RemoteException
+    public int queryFlightPrice(int id, int flightNumber)
     {
         Trace.info("queryFlightPrice - Redirect to Flight Resource Manager");
         try {
             return m_flightResourceManager.queryFlightPrice(id, flightNumber);
-        } catch (ConnectException e) {
+        } catch (IOException e) {
             connectServer("Flight", s_flightServer.host, s_flightServer.port, s_flightServer.name);
             return m_flightResourceManager.queryFlightPrice(id, flightNumber);
         } catch (Exception e) {
@@ -226,12 +226,12 @@ public class Middleware extends ResourceManager {
         }
     }
 
-    public int queryCarsPrice(int id, String location) throws RemoteException
+    public int queryCarsPrice(int id, String location)
     {
         Trace.info("queryCarsPrice - Redirect to Car Resource Manager");
         try {
             return m_carResourceManager.queryCarsPrice(id, location);
-        } catch (ConnectException e) {
+        } catch (IOException e) {
             connectServer("Car", s_carServer.host, s_carServer.port, s_carServer.name);
             return m_carResourceManager.queryCarsPrice(id, location);
         } catch (Exception e) {
@@ -240,12 +240,12 @@ public class Middleware extends ResourceManager {
         }
     }
 
-    public int queryRoomsPrice(int id, String location) throws RemoteException
+    public int queryRoomsPrice(int id, String location)
     {
         Trace.info("queryRoomsPrice - Redirect to Room Resource Manager");
         try {
             return m_roomResourceManager.queryRoomsPrice(id, location);
-        } catch (ConnectException e) {
+        } catch (IOException e) {
             connectServer("Room", s_roomServer.host, s_roomServer.port, s_roomServer.name);
             return m_roomResourceManager.queryRoomsPrice(id, location);
         } catch (Exception e) {
@@ -254,7 +254,7 @@ public class Middleware extends ResourceManager {
         }
     }
 
-    public boolean reserveFlight(int xid, int customerID, int flightNumber) throws RemoteException
+    public boolean reserveFlight(int xid, int customerID, int flightNumber)
     {
         String key = Flight.getKey(flightNumber);
 
@@ -285,7 +285,7 @@ public class Middleware extends ResourceManager {
         }
     }
 
-    public boolean reserveCar(int xid, int customerID, String location) throws RemoteException
+    public boolean reserveCar(int xid, int customerID, String location)
     {
         String key = Car.getKey(location);
 
@@ -316,7 +316,7 @@ public class Middleware extends ResourceManager {
         }
     }
 
-    public boolean reserveRoom(int xid, int customerID, String location) throws RemoteException
+    public boolean reserveRoom(int xid, int customerID, String location)
     {
         String key = Room.getKey(location);
 
@@ -347,7 +347,7 @@ public class Middleware extends ResourceManager {
         }
     }
 
-    public boolean bundle(int xid, int customerID, Vector<String> flightNumbers, String location, boolean car, boolean room) throws RemoteException
+    public boolean bundle(int xid, int customerID, Vector<String> flightNumbers, String location, boolean car, boolean room)
     {
         Trace.info("RM::bundle(" + xid + ", customer=" + customerID + ", " + flightNumbers.toString() + ", " + location + ") called" );
         Customer customer = (Customer)readData(xid, Customer.getKey(customerID));
@@ -465,9 +465,9 @@ public class Middleware extends ResourceManager {
 
 
 
-    }
+    }*/
 
-    public String getName() throws RemoteException {
+    public String getName() {
         return m_name;
     }
 
@@ -483,45 +483,8 @@ public class Middleware extends ResourceManager {
         return map;
     }
 
-    protected void connectServer(String type, String server, int port, String name)
-    {
-        try {
-            boolean first = true;
-            while (true) {
-                try {
-                    Registry registry = LocateRegistry.getRegistry(server, port);
-
-                    switch(type) {
-                        case "Flight": {
-                            m_flightResourceManager = (IResourceManager)registry.lookup(name);
-                            break;
-                        }
-                        case "Car": {
-                            m_carResourceManager = (IResourceManager)registry.lookup(name);
-                            break;
-                        }
-                        case "Room": {
-                            m_roomResourceManager = (IResourceManager)registry.lookup(name);
-                            break;
-                        }
-                    }
-                    System.out.println("Connected to '" + name + "' server [" + server + ":" + port + "/" + name + "]");
-                    break;
-                }
-                catch (NotBoundException|RemoteException e) {
-                    if (first) {
-                        System.out.println("Waiting for '" + name + "' server [" + server + ":" + port + "/" + name + "]");
-                        first = false;
-                    }
-                }
-                Thread.sleep(500);
-            }
-        }
-        catch (Exception e) {
-            System.err.println((char)27 + "[31;1mServer exception: " + (char)27 + "[0mUncaught exception");
-            e.printStackTrace();
-            System.exit(1);
-        }
+    private boolean toBool(String s) throws Exception {
+        return Boolean.parseBoolean(s);
     }
 
 }

@@ -21,6 +21,7 @@ public class TCPClient
     }
 
     public void connect() {
+        System.out.println("Attempting to connect to host:" + this.host + " port:" + this.port);
         boolean first = true;
         try {
             while (true) {

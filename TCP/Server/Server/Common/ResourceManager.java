@@ -32,6 +32,7 @@ public class ResourceManager
 	}
 
 	protected String execute(Vector<String> command) {
+		System.out.println("Execute: " + command);
 		return Execution.execute(this,command);
 	}
 

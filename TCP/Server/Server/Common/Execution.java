@@ -12,8 +12,8 @@ public class Execution {
         char type = 'S';
 
         try {
-            switch (command.get(0)) {
-                case "AddFlight": {
+            switch (command.get(0).toLowerCase()) {
+                case "addflight": {
                     type = 'B';
                     int xid = Integer.parseInt(command.get(1));
                     int flightNumber = Integer.parseInt(command.get(2));
@@ -21,7 +21,7 @@ public class Execution {
                     int price = Integer.parseInt(command.get(4));
                     return Boolean.toString(manager.addFlight(xid, flightNumber, num, price));
                 }
-                case "AddCars": {
+                case "addcars": {
                     type = 'B';
                     int xid = Integer.parseInt(command.get(1));
                     String location = command.get(2);
@@ -29,7 +29,7 @@ public class Execution {
                     int price = Integer.parseInt(command.get(4));
                     return Boolean.toString(manager.addCars(xid, location, num, price));
                 }
-                case "AddRooms": {
+                case "addrooms": {
                     type = 'B';
                     int xid = Integer.parseInt(command.get(1));
                     String location = command.get(2);
@@ -37,105 +37,105 @@ public class Execution {
                     int price = Integer.parseInt(command.get(4));
                     return Boolean.toString(manager.addRooms(xid, location, num, price));
                 }
-                case "AddCustomer": {
+                case "addcustomer": {
                     type = 'I';
                     int xid = Integer.parseInt(command.get(1));
                     return Integer.toString(manager.newCustomer(xid));
                 }
-                case "AddCustomerID": {
+                case "addcustomerid": {
                     type = 'B';
                     int xid = Integer.parseInt(command.get(1));
                     int id = Integer.parseInt(command.get(2));
                     return Boolean.toString(manager.newCustomer(xid, id));
                 }
-                case "DeleteFlight": {
+                case "deleteflight": {
                     type = 'B';
                     int xid = Integer.parseInt(command.get(1));
                     int flightNum = Integer.parseInt(command.get(2));
                     return Boolean.toString(manager.deleteFlight(xid, flightNum));
                 }
-                case "DeleteCars": {
+                case "deletecars": {
                     type = 'B';
                     int xid = Integer.parseInt(command.get(1));
                     String location = command.get(2);
                     return Boolean.toString(manager.deleteCars(xid, location));
                 }
-                case "DeleteRooms": {
+                case "deleterooms": {
                     type = 'B';
                     int xid = Integer.parseInt(command.get(1));
                     String location = command.get(2);
                     return Boolean.toString(manager.deleteRooms(xid, location));
                 }
-                case "DeleteCustomer": {
+                case "deletecustomer": {
                     type = 'B';
                     int xid = Integer.parseInt(command.get(1));
                     int customerID = Integer.parseInt(command.get(2));
                     return Boolean.toString(manager.deleteCustomer(xid, customerID));
                 }
-                case "QueryFlight": {
+                case "queryflight": {
                     type = 'I';
                     int xid = Integer.parseInt(command.get(1));
                     int flightNum = Integer.parseInt(command.get(2));
                     return Integer.toString(manager.queryFlight(xid, flightNum));
                 }
-                case "QueryCars": {
+                case "querycars": {
                     type = 'I';
                     int xid = Integer.parseInt(command.get(1));
                     String location = command.get(2);
                     return Integer.toString(manager.queryCars(xid, location));
                 }
-                case "QueryRooms": {
+                case "queryrooms": {
                     type = 'I';
                     int xid = Integer.parseInt(command.get(1));
                     String location = command.get(2);
                     return Integer.toString(manager.queryRooms(xid, location));
                 }
-                case "QueryCustomer": {
+                case "querycustomer": {
                     type = 'S';
                     int xid = Integer.parseInt(command.get(1));
                     int customerID = Integer.parseInt(command.get(2));
                     return manager.queryCustomerInfo(xid, customerID);
                 }
-                case "QueryFlightPrice": {
+                case "queryflightprice": {
                     type = 'I';
                     int xid = Integer.parseInt(command.get(1));
                     int flightNum = Integer.parseInt(command.get(2));
                     return Integer.toString(manager.queryFlightPrice(xid, flightNum));
                 }
-                case "QueryCarsPrice": {
+                case "querycarsprice": {
                     type = 'I';
                     int xid = Integer.parseInt(command.get(1));
                     String location = command.get(2);
                     return Integer.toString(manager.queryCarsPrice(xid, location));
                 }
-                case "QueryRoomsPrice": {
+                case "queryroomsprice": {
                     type = 'I';
                     int xid = Integer.parseInt(command.get(1));
                     String location = command.get(2);
                     return Integer.toString(manager.queryRoomsPrice(xid, location));
                 }
-                case "ReserveFlight": {
+                case "reserveflight": {
                     type = 'B';
                     int xid = Integer.parseInt(command.get(1));
                     int customerID = Integer.parseInt(command.get(2));
                     int flightNum = Integer.parseInt(command.get(3));
                     return Boolean.toString(manager.reserveFlight(xid, customerID, flightNum));
                 }
-                case "ReserveCar": {
+                case "reservecar": {
                     type = 'B';
                     int xid = Integer.parseInt(command.get(1));
                     int customerID = Integer.parseInt(command.get(2));
                     String location = command.get(3);
                     return Boolean.toString(manager.reserveCar(xid, customerID, location));
                 }
-                case "ReserveRoom": {
+                case "reserveroom": {
                     type = 'B';
                     int xid = Integer.parseInt(command.get(1));
                     int customerID = Integer.parseInt(command.get(2));
                     String location = command.get(3);
                     return Boolean.toString(manager.reserveRoom(xid, customerID, location));
                 }
-                case "Bundle": {
+                case "bundle": {
                     type = 'B';
                     int xid = Integer.parseInt(command.get(1));
                     int customerID = Integer.parseInt(command.get(2));
@@ -152,7 +152,7 @@ public class Execution {
 
                     return Boolean.toString(manager.bundle(xid, customerID, flightNumbers, location, car, room));
                 }
-                case "RemoveReservation": {
+                case "removereservation": {
                     type = 'B';
                     int xid = Integer.parseInt(command.get(1));
                     int customerID = Integer.parseInt(command.get(2));
@@ -161,7 +161,7 @@ public class Execution {
 
                     return Boolean.toString(manager.removeReservation(xid, customerID, reserveditemKey, reserveditemCount));
                 }
-                case "ItemsAvailable": {
+                case "itemsavailable": {
                     type = 'I';
                     int xid = Integer.parseInt(command.get(1));
                     String key = command.get(2);

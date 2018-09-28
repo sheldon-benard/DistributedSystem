@@ -337,12 +337,12 @@ public class Client
 				System.out.println("-Room Location: " + arguments.elementAt(arguments.size()-3));
 
 				StringBuilder s = new StringBuilder();
-				s.append("[");
+				s.append("[Bundle,");
 				// ID
-				s.append(toInt(arguments.elementAt(1) + ","));
+				s.append(toInt(arguments.elementAt(1)) + ",");
 
 				// Customer ID
-				s.append(toInt(arguments.elementAt(2) + ","));
+				s.append(toInt(arguments.elementAt(2)) + ",");
 
 				Vector<String> flightNumbers = new Vector<String>();
 				for (int i = 0; i < arguments.size() - 6; ++i)
@@ -354,10 +354,10 @@ public class Client
 				s.append(arguments.elementAt(arguments.size()-3) + ",");
 
 				// T/F reserve Car
-				s.append(toBoolean(arguments.elementAt(arguments.size()-2) + ","));
+				s.append(toBoolean(arguments.elementAt(arguments.size()-2)) + ",");
 
 				// T/F reserve room
-				s.append(toBoolean(arguments.elementAt(arguments.size()-1) + "]"));
+				s.append(toBoolean(arguments.elementAt(arguments.size()-1)) + "]");
 				send(connection, s.toString(), "Bundle Reserved", "Bundle could not be reserved", 'B');
 				break;
 
@@ -372,7 +372,7 @@ public class Client
 
 	public static void send(TCPClient conn, String args, String success, String failure, char responseType) throws IOException {
 		String response = conn.sendMessage(args);
-
+		//System.out.println("Response: " + response);
 		if (response != null) {
 			try {
 				if (responseType == 'B' && toBoolean(response)) {

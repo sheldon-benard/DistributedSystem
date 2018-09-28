@@ -74,14 +74,10 @@ public class TCPClient
 	}
 
 	public String sendMessage(String message) throws IOException {
-		try {
-			out.println(message);
-			return in.readLine();
-		} catch(IOException e) {
-			this.connect(false);
-			out.println(message);
-			return in.readLine();
-		}
+		out.println(message);
+		String r = in.readLine();
+		connect(false);
+		return r;
 	}
 
 	public void stopTCPClient() {

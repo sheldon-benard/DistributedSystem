@@ -318,8 +318,9 @@ public class Middleware extends ResourceManager {
         synchronized (m_flightResourceManager) {
             int price = -1;
             try {
-                price = toInt(m_flightResourceManager.sendMessage(String.format("ItemAvailable,%d,%s,%d", xid, key, 1)));
-            } catch(Exception e) {}
+                price = toInt(m_flightResourceManager.sendMessage(String.format("ItemsAvailable,%d,%s,%d", xid, key, 1)));
+            } catch(Exception e) {
+            }
 
 
             if (price < 0) {
@@ -330,8 +331,10 @@ public class Middleware extends ResourceManager {
             boolean reserved = false;
 
             try {
-                reserved = toBool(m_flightResourceManager.sendMessage(String.format("ReserveFlight,%d,%d,%d", xid, customerID, flightNumber)));
-            } catch(Exception e) {}
+                String c = String.format("ReserveFlight,%d,%d,%d", xid, customerID, flightNumber);
+                reserved = toBool(m_flightResourceManager.sendMessage(c));
+            } catch(Exception e) {
+            }
 
             if (reserved) {
                 customer.reserve(key, String.valueOf(flightNumber), price);
@@ -359,7 +362,7 @@ public class Middleware extends ResourceManager {
         synchronized (m_carResourceManager) {
             int price = -1;
             try {
-                price = toInt(m_carResourceManager.sendMessage(String.format("ItemAvailable,%d,%s,%d", xid, key, 1)));
+                price = toInt(m_carResourceManager.sendMessage(String.format("ItemsAvailable,%d,%s,%d", xid, key, 1)));
             } catch(Exception e) {}
 
             if (price < 0) {
@@ -399,7 +402,7 @@ public class Middleware extends ResourceManager {
         synchronized (m_roomResourceManager) {
             int price = -1;
             try {
-                price = toInt(m_roomResourceManager.sendMessage(String.format("ItemAvailable,%d,%s,%d", xid, key, 1)));
+                price = toInt(m_roomResourceManager.sendMessage(String.format("ItemsAvailable,%d,%s,%d", xid, key, 1)));
             } catch(Exception e) {}
 
             if (price < 0) {
@@ -454,7 +457,7 @@ public class Middleware extends ResourceManager {
 
                 int price = -1;
                 try {
-                    price = toInt(m_flightResourceManager.sendMessage(String.format("ItemAvailable,%d,%s,%d", xid,Flight.getKey(keyInt),countMap.get(key))));
+                    price = toInt(m_flightResourceManager.sendMessage(String.format("ItemsAvailable,%d,%s,%d", xid,Flight.getKey(keyInt),countMap.get(key))));
                 } catch(Exception e) {}
 
                 if (price < 0) {
@@ -470,7 +473,7 @@ public class Middleware extends ResourceManager {
                 synchronized (m_carResourceManager) {
 
                     try {
-                        carPrice = toInt(m_carResourceManager.sendMessage(String.format("ItemAvailable,%d,%s,%d", xid,Car.getKey(location),1)));
+                        carPrice = toInt(m_carResourceManager.sendMessage(String.format("ItemsAvailable,%d,%s,%d", xid,Car.getKey(location),1)));
                     } catch(Exception e) {}
 
                     if (carPrice < 0) {
@@ -480,7 +483,7 @@ public class Middleware extends ResourceManager {
                     synchronized (m_roomResourceManager) {
 
                         try {
-                            roomPrice = toInt(m_roomResourceManager.sendMessage(String.format("ItemAvailable,%d,%s,%d", xid,Room.getKey(location),1)));
+                            roomPrice = toInt(m_roomResourceManager.sendMessage(String.format("ItemsAvailable,%d,%s,%d", xid,Room.getKey(location),1)));
                         } catch(Exception e) {}
 
                         if (roomPrice < 0) {
@@ -511,7 +514,7 @@ public class Middleware extends ResourceManager {
                 synchronized (m_carResourceManager) {
 
                     try {
-                        carPrice = toInt(m_carResourceManager.sendMessage(String.format("ItemAvailable,%d,%s,%d", xid,Car.getKey(location),1)));
+                        carPrice = toInt(m_carResourceManager.sendMessage(String.format("ItemsAvailable,%d,%s,%d", xid,Car.getKey(location),1)));
                     } catch(Exception e) {}
 
                     if (carPrice < 0) {
@@ -531,7 +534,7 @@ public class Middleware extends ResourceManager {
                 synchronized (m_roomResourceManager) {
 
                     try {
-                        roomPrice = toInt(m_roomResourceManager.sendMessage(String.format("ItemAvailable,%d,%s,%d", xid,Room.getKey(location),1)));
+                        roomPrice = toInt(m_roomResourceManager.sendMessage(String.format("ItemsAvailable,%d,%s,%d", xid,Room.getKey(location),1)));
                     } catch(Exception e) {}
 
                     if (roomPrice < 0) {

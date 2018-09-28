@@ -35,7 +35,7 @@ public class Execution {
                     String location = command.get(2);
                     int num = Integer.parseInt(command.get(3));
                     int price = Integer.parseInt(command.get(4));
-                    return Boolean.toString(manager.addCars(xid, location, num, price));
+                    return Boolean.toString(manager.addRooms(xid, location, num, price));
                 }
                 case "AddCustomer": {
                     type = 'I';
@@ -64,7 +64,7 @@ public class Execution {
                     type = 'B';
                     int xid = Integer.parseInt(command.get(1));
                     String location = command.get(2);
-                    return Boolean.toString(manager.deleteCars(xid, location));
+                    return Boolean.toString(manager.deleteRooms(xid, location));
                 }
                 case "DeleteCustomer": {
                     type = 'B';
@@ -151,6 +151,23 @@ public class Execution {
                     boolean room = toBoolean(command.get(command.size() - 1));
 
                     return Boolean.toString(manager.bundle(xid, customerID, flightNumbers, location, car, room));
+                }
+                case "RemoveReservation": {
+                    type = 'B';
+                    int xid = Integer.parseInt(command.get(1));
+                    int customerID = Integer.parseInt(command.get(2));
+                    String reserveditemKey = command.get(3);
+                    int reserveditemCount = Integer.parseInt(command.get(4));
+
+                    return Boolean.toString(manager.removeReservation(xid, customerID, reserveditemKey, reserveditemCount));
+                }
+                case "ItemsAvailable": {
+                    type = 'I';
+                    int xid = Integer.parseInt(command.get(1));
+                    String key = command.get(2);
+                    int quantity = Integer.parseInt(command.get(3));
+
+                    return Integer.toString(manager.itemsAvailable(xid, key, quantity));
                 }
             }
         } catch(Exception e) {

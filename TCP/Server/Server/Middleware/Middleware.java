@@ -46,16 +46,20 @@ public class Middleware extends ResourceManager {
         }
     }
 
-    /*public boolean addCars(int id, String location, int numCars, int price)
+    public boolean addCars(int id, String location, int numCars, int price)
     {
+        Trace.info("addCars - Redirect to Car Resource Manager");
+        String command = String.format("AddCars,%d,%s,%d,%d",id,location,numCars,price);
+
         synchronized (m_carResourceManager) {
-            Trace.info("addCars - Redirect to Car Resource Manager");
             try {
-                return m_carResourceManager.addCars(id, location, numCars, price);
-            } catch (IOException e) {
-                connectServer("Car", s_carServer.host, s_carServer.port, s_carServer.name);
-                return m_carResourceManager.addCars(id, location, numCars, price);
-            } catch (Exception e) {
+                try {
+                    return toBool(m_carResourceManager.sendMessage(command));
+                } catch (IOException e) {
+                    m_carResourceManager.connect();
+                    return toBool(m_carResourceManager.sendMessage(command));
+                }
+            } catch(Exception e) {
                 Trace.error(e.toString());
                 return false;
             }
@@ -65,14 +69,18 @@ public class Middleware extends ResourceManager {
 
     public boolean addRooms(int id, String location, int numRooms, int price)
     {
+        Trace.info("addRooms - Redirect to Room Resource Manager");
+        String command = String.format("AddRooms,%d,%s,%d,%d",id,location,numRooms,price);
+
         synchronized (m_roomResourceManager) {
-            Trace.info("addRooms - Redirect to Room Resource Manager");
             try {
-                return m_roomResourceManager.addRooms(id, location, numRooms, price);
-            } catch (IOException e) {
-                connectServer("Room", s_roomServer.host, s_roomServer.port, s_roomServer.name);
-                return m_roomResourceManager.addRooms(id, location, numRooms, price);
-            } catch (Exception e) {
+                try {
+                    return toBool(m_roomResourceManager.sendMessage(command));
+                } catch (IOException e) {
+                    m_roomResourceManager.connect();
+                    return toBool(m_roomResourceManager.sendMessage(command));
+                }
+            } catch(Exception e) {
                 Trace.error(e.toString());
                 return false;
             }
@@ -81,14 +89,18 @@ public class Middleware extends ResourceManager {
 
     public boolean deleteFlight(int id, int flightNum)
     {
+        Trace.info("deleteFlight - Redirect to Flight Resource Manager");
+        String command = String.format("DeleteFlight,%d,%d",id,flightNum);
+
         synchronized (m_flightResourceManager) {
-            Trace.info("deleteFlight - Redirect to Flight Resource Manager");
             try {
-                return m_flightResourceManager.deleteFlight(id, flightNum);
-            } catch (IOException e) {
-                connectServer("Flight", s_flightServer.host, s_flightServer.port, s_flightServer.name);
-                return m_flightResourceManager.deleteFlight(id, flightNum);
-            } catch (Exception e) {
+                try {
+                    return toBool(m_flightResourceManager.sendMessage(command));
+                } catch (IOException e) {
+                    m_flightResourceManager.connect();
+                    return toBool(m_flightResourceManager.sendMessage(command));
+                }
+            } catch(Exception e) {
                 Trace.error(e.toString());
                 return false;
             }
@@ -97,14 +109,18 @@ public class Middleware extends ResourceManager {
 
     public boolean deleteCars(int id, String location)
     {
+        Trace.info("deleteCars - Redirect to Car Resource Manager");
+        String command = String.format("DeleteCars,%d,%s",id,location);
+
         synchronized (m_carResourceManager) {
-            Trace.info("deleteCars - Redirect to Car Resource Manager");
             try {
-                return m_carResourceManager.deleteCars(id, location);
-            } catch (IOException e) {
-                connectServer("Car", s_carServer.host, s_carServer.port, s_carServer.name);
-                return m_carResourceManager.deleteCars(id, location);
-            } catch (Exception e) {
+                try {
+                    return toBool(m_carResourceManager.sendMessage(command));
+                } catch (IOException e) {
+                    m_carResourceManager.connect();
+                    return toBool(m_carResourceManager.sendMessage(command));
+                }
+            } catch(Exception e) {
                 Trace.error(e.toString());
                 return false;
             }
@@ -113,14 +129,18 @@ public class Middleware extends ResourceManager {
 
     public boolean deleteRooms(int id, String location)
     {
+        Trace.info("deleteRooms - Redirect to Room Resource Manager");
+        String command = String.format("DeleteRooms,%d,%s",id,location);
+
         synchronized (m_roomResourceManager) {
-            Trace.info("deleteRooms - Redirect to Room Resource Manager");
             try {
-                return m_roomResourceManager.deleteRooms(id, location);
-            } catch (IOException e) {
-                connectServer("Room", s_roomServer.host, s_roomServer.port, s_roomServer.name);
-                return m_roomResourceManager.deleteRooms(id, location);
-            } catch (Exception e) {
+                try {
+                    return toBool(m_roomResourceManager.sendMessage(command));
+                } catch (IOException e) {
+                    m_roomResourceManager.connect();
+                    return toBool(m_roomResourceManager.sendMessage(command));
+                }
+            } catch(Exception e) {
                 Trace.error(e.toString());
                 return false;
             }
@@ -144,19 +164,24 @@ public class Middleware extends ResourceManager {
             {
                 String type = reservedKey.split("-")[0];
                 ReservedItem reserveditem = customer.getReservedItem(reservedKey);
+                String command = String.format("RemoveReservation,%d,%d,%s,%d",xid,customerID,reserveditem.getKey(),reserveditem.getCount());
+
                 if (type.equals("flight")) {
                     synchronized (m_flightResourceManager) {
-                        m_flightResourceManager.removeReservation(xid, customerID, reserveditem.getKey(), reserveditem.getCount());
+                        try {m_flightResourceManager.sendMessage(command); }
+                        catch (Exception e) {}
                     }
                 }
                 else if (type.equals("car")) {
                     synchronized (m_carResourceManager) {
-                        m_carResourceManager.removeReservation(xid, customerID, reserveditem.getKey(), reserveditem.getCount());
+                        try {m_carResourceManager.sendMessage(command); }
+                        catch (Exception e) {}
                     }
                 }
                 else if (type.equals("room")) {
                     synchronized (m_roomResourceManager) {
-                        m_roomResourceManager.removeReservation(xid, customerID, reserveditem.getKey(), reserveditem.getCount());
+                        try {m_roomResourceManager.sendMessage(command); }
+                        catch (Exception e) {}
                     }
                 }
                 else
@@ -173,11 +198,15 @@ public class Middleware extends ResourceManager {
     public int queryFlight(int id, int flightNumber)
     {
         Trace.info("queryFlight - Redirect to Flight Resource Manager");
+        String command = String.format("QueryFlight,%d,%d",id,flightNumber);
+
         try {
-            return m_flightResourceManager.queryFlight(id, flightNumber);
-        } catch (IOException e) {
-            connectServer("Flight", s_flightServer.host, s_flightServer.port, s_flightServer.name);
-            return m_flightResourceManager.queryFlight(id, flightNumber);
+            try {
+                return toInt(m_flightResourceManager.sendMessage(command));
+            } catch (IOException e) {
+                m_flightResourceManager.connect();
+                return toInt(m_flightResourceManager.sendMessage(command));
+            }
         } catch (Exception e) {
             Trace.error(e.toString());
             return -1;
@@ -187,12 +216,16 @@ public class Middleware extends ResourceManager {
     public int queryCars(int id, String location)
     {
         Trace.info("queryCars - Redirect to Car Resource Manager");
+        String command = String.format("QueryCars,%d,%s",id,location);
+
         try {
-            return m_carResourceManager.queryCars(id, location);
-        } catch (IOException e) {
-            connectServer("Car", s_carServer.host, s_carServer.port, s_carServer.name);
-            return m_carResourceManager.queryCars(id, location);
-        } catch (Exception e) {
+            try {
+                return toInt(m_carResourceManager.sendMessage(command));
+            } catch (IOException e) {
+                m_carResourceManager.connect();
+                return toInt(m_carResourceManager.sendMessage(command));
+            }
+        }catch (Exception e) {
             Trace.error(e.toString());
             return -1;
         }
@@ -201,12 +234,16 @@ public class Middleware extends ResourceManager {
     public int queryRooms(int id, String location)
     {
         Trace.info("queryRooms - Redirect to Room Resource Manager");
+        String command = String.format("QueryRooms,%d,%s",id,location);
+
         try {
-            return m_roomResourceManager.queryRooms(id, location);
-        } catch (IOException e) {
-            connectServer("Room", s_roomServer.host, s_roomServer.port, s_roomServer.name);
-            return m_roomResourceManager.queryRooms(id, location);
-        } catch (Exception e) {
+            try {
+                return toInt(m_roomResourceManager.sendMessage(command));
+            } catch (IOException e) {
+                m_roomResourceManager.connect();
+                return toInt(m_roomResourceManager.sendMessage(command));
+            }
+        }catch (Exception e) {
             Trace.error(e.toString());
             return -1;
         }
@@ -215,12 +252,15 @@ public class Middleware extends ResourceManager {
     public int queryFlightPrice(int id, int flightNumber)
     {
         Trace.info("queryFlightPrice - Redirect to Flight Resource Manager");
+        String command = String.format("QueryFlightPrice,%d,%d",id,flightNumber);
         try {
-            return m_flightResourceManager.queryFlightPrice(id, flightNumber);
-        } catch (IOException e) {
-            connectServer("Flight", s_flightServer.host, s_flightServer.port, s_flightServer.name);
-            return m_flightResourceManager.queryFlightPrice(id, flightNumber);
-        } catch (Exception e) {
+            try {
+                return toInt(m_flightResourceManager.sendMessage(command));
+            } catch (IOException e) {
+                m_flightResourceManager.connect();
+                return toInt(m_flightResourceManager.sendMessage(command));
+            }
+        }catch (Exception e) {
             Trace.error(e.toString());
             return -1;
         }
@@ -229,12 +269,16 @@ public class Middleware extends ResourceManager {
     public int queryCarsPrice(int id, String location)
     {
         Trace.info("queryCarsPrice - Redirect to Car Resource Manager");
+        String command = String.format("QueryCarsPrice,%d,%s",id,location);
+
         try {
-            return m_carResourceManager.queryCarsPrice(id, location);
-        } catch (IOException e) {
-            connectServer("Car", s_carServer.host, s_carServer.port, s_carServer.name);
-            return m_carResourceManager.queryCarsPrice(id, location);
-        } catch (Exception e) {
+            try {
+                return toInt(m_carResourceManager.sendMessage(command));
+            } catch (IOException e) {
+                m_carResourceManager.connect();
+                return toInt(m_carResourceManager.sendMessage(command));
+            }
+        }catch (Exception e) {
             Trace.error(e.toString());
             return -1;
         }
@@ -243,12 +287,16 @@ public class Middleware extends ResourceManager {
     public int queryRoomsPrice(int id, String location)
     {
         Trace.info("queryRoomsPrice - Redirect to Room Resource Manager");
+        String command = String.format("QueryRoomsPrice,%d,%s",id,location);
+
         try {
-            return m_roomResourceManager.queryRoomsPrice(id, location);
-        } catch (IOException e) {
-            connectServer("Room", s_roomServer.host, s_roomServer.port, s_roomServer.name);
-            return m_roomResourceManager.queryRoomsPrice(id, location);
-        } catch (Exception e) {
+            try {
+                return toInt(m_roomResourceManager.sendMessage(command));
+            } catch (IOException e) {
+                m_roomResourceManager.connect();
+                return toInt(m_roomResourceManager.sendMessage(command));
+            }
+        }catch (Exception e) {
             Trace.error(e.toString());
             return -1;
         }
@@ -268,14 +316,24 @@ public class Middleware extends ResourceManager {
         }
 
         synchronized (m_flightResourceManager) {
-            int price = m_flightResourceManager.itemsAvailable(xid, key, 1);
+            int price = -1;
+            try {
+                price = toInt(m_flightResourceManager.sendMessage(String.format("ItemAvailable,%d,%s,%d", xid, key, 1)));
+            } catch(Exception e) {}
+
 
             if (price < 0) {
                 Trace.warn("RM::reserveItem(" + xid + ", " + customerID + ", " + flightNumber + ")  failed--item unavailable");
                 return false;
             }
 
-            if (m_flightResourceManager.reserveFlight(xid, customerID, flightNumber)) {
+            boolean reserved = false;
+
+            try {
+                reserved = toBool(m_flightResourceManager.sendMessage(String.format("ReserveFlight,%d,%d,%d", xid, customerID, flightNumber)));
+            } catch(Exception e) {}
+
+            if (reserved) {
                 customer.reserve(key, String.valueOf(flightNumber), price);
                 writeData(xid, customer.getKey(), customer);
                 return true;
@@ -299,14 +357,23 @@ public class Middleware extends ResourceManager {
         }
 
         synchronized (m_carResourceManager) {
-            int price = m_carResourceManager.itemsAvailable(xid, key, 1);
+            int price = -1;
+            try {
+                price = toInt(m_carResourceManager.sendMessage(String.format("ItemAvailable,%d,%s,%d", xid, key, 1)));
+            } catch(Exception e) {}
 
             if (price < 0) {
                 Trace.warn("RM::reserveItem(" + xid + ", " + customerID + ", " + location + ")  failed--item unavailable");
                 return false;
             }
 
-            if (m_carResourceManager.reserveCar(xid, customerID, location)) {
+            boolean reserved = false;
+
+            try {
+                reserved = toBool(m_carResourceManager.sendMessage(String.format("ReserveCar,%d,%d,%s", xid, customerID, location)));
+            } catch(Exception e) {}
+
+            if (reserved) {
                 customer.reserve(key, location, price);
                 writeData(xid, customer.getKey(), customer);
                 return true;
@@ -330,14 +397,23 @@ public class Middleware extends ResourceManager {
         }
 
         synchronized (m_roomResourceManager) {
-            int price = m_roomResourceManager.itemsAvailable(xid, key, 1);
+            int price = -1;
+            try {
+                price = toInt(m_roomResourceManager.sendMessage(String.format("ItemAvailable,%d,%s,%d", xid, key, 1)));
+            } catch(Exception e) {}
 
             if (price < 0) {
                 Trace.warn("RM::reserveItem(" + xid + ", " + customerID + ", " + location + ")  failed--item unavailable");
                 return false;
             }
 
-            if (m_roomResourceManager.reserveRoom(xid, customerID, location)) {
+            boolean reserved = false;
+
+            try {
+                reserved = toBool(m_roomResourceManager.sendMessage(String.format("ReserveRoom,%d,%d,%s", xid, customerID, location)));
+            } catch(Exception e) {}
+
+            if (reserved) {
                 customer.reserve(key, location, price);
                 writeData(xid, customer.getKey(), customer);
                 return true;
@@ -359,8 +435,8 @@ public class Middleware extends ResourceManager {
 
         HashMap<String, Integer> countMap = countFlights(flightNumbers);
         HashMap<Integer, Integer> flightPrice = new HashMap<Integer, Integer>();
-        int carPrice;
-        int roomPrice;
+        int carPrice = -1;
+        int roomPrice = -1;
 
         synchronized (m_flightResourceManager) {
 
@@ -376,7 +452,10 @@ public class Middleware extends ResourceManager {
                     return false;
                 }
 
-                int price = m_flightResourceManager.itemsAvailable(xid,Flight.getKey(keyInt),countMap.get(key));
+                int price = -1;
+                try {
+                    price = toInt(m_flightResourceManager.sendMessage(String.format("ItemAvailable,%d,%s,%d", xid,Flight.getKey(keyInt),countMap.get(key))));
+                } catch(Exception e) {}
 
                 if (price < 0) {
                     Trace.warn("RM:bundle(" + xid + ", customer=" + customerID + ", " + flightNumbers.toString() + ", " + location + ")  failed--flight-" + key + " doesn't have enough spots");
@@ -390,7 +469,9 @@ public class Middleware extends ResourceManager {
             if (car && room) {
                 synchronized (m_carResourceManager) {
 
-                    carPrice = m_carResourceManager.itemsAvailable(xid,Car.getKey(location),1);
+                    try {
+                        carPrice = toInt(m_carResourceManager.sendMessage(String.format("ItemAvailable,%d,%s,%d", xid,Car.getKey(location),1)));
+                    } catch(Exception e) {}
 
                     if (carPrice < 0) {
                         Trace.warn("RM:bundle(" + xid + ", customer=" + customerID + ", " + flightNumbers.toString() + ", " + location + ")  failed--car-" + location + " doesn't have enough spots");
@@ -398,19 +479,28 @@ public class Middleware extends ResourceManager {
                     }
                     synchronized (m_roomResourceManager) {
 
-                        roomPrice = m_roomResourceManager.itemsAvailable(xid,Room.getKey(location),1);
+                        try {
+                            roomPrice = toInt(m_roomResourceManager.sendMessage(String.format("ItemAvailable,%d,%s,%d", xid,Room.getKey(location),1)));
+                        } catch(Exception e) {}
 
                         if (roomPrice < 0) {
                             Trace.warn("RM:bundle(" + xid + ", customer=" + customerID + ", " + flightNumbers.toString() + ", " + location + ")  failed--room-" + location + " doesn't have enough spots");
                             return false;
                         }
 
-                        m_roomResourceManager.reserveRoom(xid, customerID, location);
+                        try {
+                            m_roomResourceManager.sendMessage(String.format("ReserveRoom,%d,%d,%s", xid, customerID, location));
+                        } catch (Exception e){}
+
                         customer.reserve(Room.getKey(location), location, roomPrice);
                         writeData(xid, customer.getKey(), customer);
                     }
 
-                    m_carResourceManager.reserveCar(xid, customerID, location);
+                    //m_carResourceManager.reserveCar(xid, customerID, location);
+
+                    try {
+                        m_carResourceManager.sendMessage(String.format("ReserveCar,%d,%d,%s", xid, customerID, location));
+                    } catch (Exception e){}
                     customer.reserve(Car.getKey(location), location, carPrice);
                     writeData(xid, customer.getKey(), customer);
 
@@ -420,13 +510,18 @@ public class Middleware extends ResourceManager {
             else if (car) {
                 synchronized (m_carResourceManager) {
 
-                    carPrice = m_carResourceManager.itemsAvailable(xid,Car.getKey(location),1);
+                    try {
+                        carPrice = toInt(m_carResourceManager.sendMessage(String.format("ItemAvailable,%d,%s,%d", xid,Car.getKey(location),1)));
+                    } catch(Exception e) {}
 
                     if (carPrice < 0) {
                         Trace.warn("RM:bundle(" + xid + ", customer=" + customerID + ", " + flightNumbers.toString() + ", " + location + ")  failed--car-" + location + " doesn't have enough spots");
                         return false;
                     }
-                    m_carResourceManager.reserveCar(xid, customerID, location);
+                    //m_carResourceManager.reserveCar(xid, customerID, location);
+                    try {
+                        m_carResourceManager.sendMessage(String.format("ReserveCar,%d,%d,%s", xid, customerID, location));
+                    } catch (Exception e){}
                     customer.reserve(Car.getKey(location), location, carPrice);
                     writeData(xid, customer.getKey(), customer);
 
@@ -435,14 +530,20 @@ public class Middleware extends ResourceManager {
             else if (room) {
                 synchronized (m_roomResourceManager) {
 
-                    roomPrice = m_roomResourceManager.itemsAvailable(xid,Room.getKey(location),1);
+                    try {
+                        roomPrice = toInt(m_roomResourceManager.sendMessage(String.format("ItemAvailable,%d,%s,%d", xid,Room.getKey(location),1)));
+                    } catch(Exception e) {}
 
                     if (roomPrice < 0) {
                         Trace.warn("RM:bundle(" + xid + ", customer=" + customerID + ", " + flightNumbers.toString() + ", " + location + ")  failed--room-" + location + " doesn't have enough spots");
                         return false;
                     }
 
-                    m_roomResourceManager.reserveRoom(xid, customerID, location);
+                    //m_roomResourceManager.reserveRoom(xid, customerID, location);
+                    try {
+                        m_roomResourceManager.sendMessage(String.format("ReserveRoom,%d,%d,%s", xid, customerID, location));
+                    } catch (Exception e){}
+
                     customer.reserve(Room.getKey(location), location, roomPrice);
                     writeData(xid, customer.getKey(), customer);
                 }
@@ -453,7 +554,10 @@ public class Middleware extends ResourceManager {
                 for (int i = 0; i < countMap.get(String.valueOf(key)); i++) {
                     int price = flightPrice.get(key);
 
-                    m_flightResourceManager.reserveFlight(xid, customerID, key);
+                    //m_flightResourceManager.reserveFlight(xid, customerID, key);
+                    try {
+                        m_roomResourceManager.sendMessage(String.format("ReserveFlight,%d,%d,%d", xid, customerID, key));
+                    } catch (Exception e){}
                     customer.reserve(Flight.getKey(key), String.valueOf(key), price);
                     writeData(xid, customer.getKey(), customer);
                 }
@@ -465,7 +569,7 @@ public class Middleware extends ResourceManager {
 
 
 
-    }*/
+    }
 
     public String getName() {
         return m_name;
@@ -485,6 +589,10 @@ public class Middleware extends ResourceManager {
 
     private boolean toBool(String s) throws Exception {
         return Boolean.parseBoolean(s);
+    }
+
+    private int toInt(String s) throws Exception {
+        return Integer.parseInt(s);
     }
 
 }

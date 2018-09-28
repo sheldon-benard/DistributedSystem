@@ -63,6 +63,7 @@ public class TCPMiddleware extends Middleware{
     private void start(int port) {
         try {
             serverSocket = new ServerSocket(port);
+            System.out.println("Listening on port: " + port);
             while (true)
                 new ClientHandler(serverSocket.accept()).start();
         } catch(IOException e) {

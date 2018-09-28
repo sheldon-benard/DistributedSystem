@@ -21,7 +21,10 @@ public class TCPClient
     }
 
     public void connect() {
-        System.out.println("Attempting to connect to host:" + this.host + " port:" + this.port);
+        this.connect(true);
+    }
+
+    public void connect(boolean print) {
         boolean first = true;
         try {
             while (true) {
@@ -29,7 +32,7 @@ public class TCPClient
                     clientSocket = new Socket(host, port);
                     out = new PrintWriter(clientSocket.getOutputStream(), true);
                     in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-                    System.out.println("Connected to host:" + this.host + " port:" + this.port);
+                    if (print) System.out.println("Connected to host:" + this.host + " port:" + this.port);
                     break;
                 } catch (IOException e) {
                     if (first) {
@@ -50,8 +53,14 @@ public class TCPClient
     }
 
     public String sendMessage(String message) throws IOException {
-        out.println(message);
-        return in.readLine();
+        try {
+            out.println(message);
+            return in.readLine();
+        } catch(IOException e) {
+            this.connect(false);
+            out.println(message);
+            return in.readLine();
+        }
     }
 
     public void stopTCPClient() {

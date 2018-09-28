@@ -22,7 +22,6 @@ public class Client
 		System.out.println("Location \"help\" for list of supported commands");
 
 		BufferedReader stdin = new BufferedReader(new InputStreamReader(System.in));
-
 		while (true)
 		{
 			// Read the next command
@@ -38,6 +37,8 @@ public class Client
 				System.exit(1);
 			}
 
+
+
 			try {
 				arguments = parse(command);
 				Command cmd = Command.fromString((String)arguments.elementAt(0));
@@ -45,7 +46,7 @@ public class Client
 					execute(cmd, arguments);
 				}
 				catch (IOException e) {
-					connection.connect();
+					connection.connect(true);
 					execute(cmd, arguments);
 				}
 			}
@@ -120,7 +121,7 @@ public class Client
 				int numRooms = toInt(arguments.elementAt(3));
 				int price = toInt(arguments.elementAt(4));
 
-				send(connection, arguments.toString(), "Roomns added", "Rooms could not be added", 'B');
+				send(connection, arguments.toString(), "Rooms added", "Rooms could not be added", 'B');
 				break;
 			}
 			case AddCustomer: {

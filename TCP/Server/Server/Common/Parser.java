@@ -6,6 +6,11 @@ public class Parser {
 
     public static Vector<String> parse(String input)
     {
+        if (input == null || input.length() == 0)
+            return null;
+
+
+
         String command;
 
         if (input.charAt(0) == '[' && input.charAt(input.length() - 1) == ']')

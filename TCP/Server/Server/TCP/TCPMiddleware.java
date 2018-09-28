@@ -101,6 +101,15 @@ public class TCPMiddleware extends Middleware{
                 String inputLine = in.readLine();
 
                 Vector<String> parsedCommand = Parser.parse(inputLine);
+
+                if (parsedCommand == null) {
+                    out.println("");
+                    in.close();
+                    out.close();
+                    clientSocket.close();
+                    return;
+                }
+
                 String result = middleware.execute(parsedCommand);
 
                 out.println(result);

@@ -96,6 +96,15 @@ public class TCPResourceManager extends ResourceManager
                 String inputLine = in.readLine();
 
                 Vector<String> parsedCommand = Parser.parse(inputLine);
+
+                if (parsedCommand == null) {
+                    out.println("");
+                    in.close();
+                    out.close();
+                    clientSocket.close();
+                    return;
+                }
+
                 String result = manager.execute(parsedCommand);
 
                 out.println(result);

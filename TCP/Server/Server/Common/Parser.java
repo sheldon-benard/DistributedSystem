@@ -9,8 +9,6 @@ public class Parser {
         if (input == null || input.length() == 0)
             return null;
 
-
-
         String command;
 
         if (input.charAt(0) == '[' && input.charAt(input.length() - 1) == ']')

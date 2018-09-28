@@ -40,7 +40,6 @@ public class TCPClient
                         first = false;
                     }
                 }
-
                 Thread.sleep(500);
             }
         }

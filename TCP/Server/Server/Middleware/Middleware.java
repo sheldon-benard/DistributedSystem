@@ -492,7 +492,7 @@ public class Middleware extends ResourceManager {
                         }
 
                         try {
-                            m_roomResourceManager.sendMessage(String.format("ReserveRoom,%d,%d,%s", xid, customerID, location));
+                            toBool(m_roomResourceManager.sendMessage(String.format("ReserveRoom,%d,%d,%s", xid, customerID, location)));
                         } catch (Exception e){}
 
                         customer.reserve(Room.getKey(location), location, roomPrice);
@@ -502,7 +502,7 @@ public class Middleware extends ResourceManager {
                     //m_carResourceManager.reserveCar(xid, customerID, location);
 
                     try {
-                        m_carResourceManager.sendMessage(String.format("ReserveCar,%d,%d,%s", xid, customerID, location));
+                        toBool(m_carResourceManager.sendMessage(String.format("ReserveCar,%d,%d,%s", xid, customerID, location)));
                     } catch (Exception e){}
                     customer.reserve(Car.getKey(location), location, carPrice);
                     writeData(xid, customer.getKey(), customer);
@@ -523,7 +523,7 @@ public class Middleware extends ResourceManager {
                     }
                     //m_carResourceManager.reserveCar(xid, customerID, location);
                     try {
-                        m_carResourceManager.sendMessage(String.format("ReserveCar,%d,%d,%s", xid, customerID, location));
+                        toBool(m_carResourceManager.sendMessage(String.format("ReserveCar,%d,%d,%s", xid, customerID, location)));
                     } catch (Exception e){}
                     customer.reserve(Car.getKey(location), location, carPrice);
                     writeData(xid, customer.getKey(), customer);
@@ -544,7 +544,7 @@ public class Middleware extends ResourceManager {
 
                     //m_roomResourceManager.reserveRoom(xid, customerID, location);
                     try {
-                        m_roomResourceManager.sendMessage(String.format("ReserveRoom,%d,%d,%s", xid, customerID, location));
+                        toBool(m_roomResourceManager.sendMessage(String.format("ReserveRoom,%d,%d,%s", xid, customerID, location)));
                     } catch (Exception e){}
 
                     customer.reserve(Room.getKey(location), location, roomPrice);
@@ -559,7 +559,7 @@ public class Middleware extends ResourceManager {
 
                     //m_flightResourceManager.reserveFlight(xid, customerID, key);
                     try {
-                        m_roomResourceManager.sendMessage(String.format("ReserveFlight,%d,%d,%d", xid, customerID, key));
+                        toBool(m_flightResourceManager.sendMessage(String.format("ReserveFlight,%d,%d,%d", xid, customerID, key)));
                     } catch (Exception e){}
                     customer.reserve(Flight.getKey(key), String.valueOf(key), price);
                     writeData(xid, customer.getKey(), customer);

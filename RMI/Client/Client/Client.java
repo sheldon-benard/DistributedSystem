@@ -429,7 +429,7 @@ public abstract class Client
 				System.out.println("Printing a quantity summary [xid=" + arguments.elementAt(1) + "]");
 				System.out.println("For all items with remaining quantities <= " + arguments.elementAt(2));
 
-				int id = toInt(arguments.elementAt(1));
+				int xid = toInt(arguments.elementAt(1));
 				int upperBound = toInt(arguments.elementAt(2));
 
 				String summary = m_resourceManager.Analytics(xid, upperBound);

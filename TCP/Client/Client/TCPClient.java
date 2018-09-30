@@ -14,16 +14,17 @@ public class TCPClient
 	private String host;
 	private int port;
 
-	private static boolean debug = false;
-
 	public static void main(String args[])
 	{
+	    boolean debug = false;
 		try {
-			if (args.length > 0) {
-				s_serverHost = args[0];
-			}
+		    debug = (args[0].equals("true")) ? true : false;
+
 			if (args.length > 1) {
-				s_serverPort = Integer.parseInt(args[1]);
+				s_serverHost = args[1];
+			}
+			if (args.length > 2) {
+				s_serverPort = Integer.parseInt(args[2]);
 			}
 		} catch(Exception e) {
 			System.err.println((char)27 + "[31;1mTCPClient exception: " + (char)27 + "[0m" + e.toString());

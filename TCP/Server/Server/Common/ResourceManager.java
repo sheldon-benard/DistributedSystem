@@ -381,7 +381,7 @@ public class ResourceManager
 		String summary = "";
 
 		for (String key: m_data.keySet()) {
-			int quantity = 	queryPrice(xid, key);
+			int quantity = 	queryNum(xid, key);
 			if (quantity <= upperBound)
 				summary += key + ": RemainingQuantity=" + quantity + "\n";
 		}

@@ -14,6 +14,8 @@ public class TCPClient
 	private String host;
 	private int port;
 
+	private static boolean debug = false;
+
 	public static void main(String args[])
 	{
 		try {
@@ -29,8 +31,14 @@ public class TCPClient
 		}
 
 		try {
-			Client client = new Client(new TCPClient(s_serverHost,s_serverPort));
-			client.start();
+			if (!debug) {
+				Client client = new Client(new TCPClient(s_serverHost, s_serverPort));
+				client.start();
+			}
+			else {
+				ClientTest client = new ClientTest(new TCPClient(s_serverHost, s_serverPort));
+				client.start();
+			}
 		} 
 		catch (Exception e) {    
 			System.err.println((char)27 + "[31;1mTCPClient exception: " + (char)27 + "[0mUncaught exception");

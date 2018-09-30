@@ -96,6 +96,17 @@ public class Execution {
                     int customerID = Integer.parseInt(command.get(2));
                     return manager.queryCustomerInfo(xid, customerID);
                 }
+                case "summary": {
+                    type = 'S';
+                    int xid = Integer.parseInt(command.get(1));
+                    return manager.Summary(xid);
+                }
+                case "analytics": {
+                    type = 'S';
+                    int xid = Integer.parseInt(command.get(1));
+                    int upperBound = Integer.parseInt(command.get(2));
+                    return manager.Analytics(xid,upperBound);
+                }
                 case "queryflightprice": {
                     type = 'I';
                     int xid = Integer.parseInt(command.get(1));

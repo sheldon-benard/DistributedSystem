@@ -485,6 +485,33 @@ public class Middleware extends ResourceManager {
         }
     }
 
+    public String Analytics(int xid, int upperBound)
+    {
+        String summary = "";
+        summary += "Flight Quantities\n";
+        try {
+            summary += m_flightResourceManager.Analytics(xid, upperBound);
+        } catch (Exception e) {
+            summary += "Error in retrieving quantities\n";
+        }
+
+        summary += "Car Quantities\n";
+        try {
+            summary += m_carResourceManager.Analytics(xid, upperBound);
+        } catch (Exception e) {
+            summary += "Error in retrieving quantities\n";
+        }
+
+        summary += "Room Quantities\n";
+        try {
+            summary += m_roomResourceManager.Analytics(xid, upperBound);
+        } catch (Exception e) {
+            summary += "Error in retrieving quantities\n";
+        }
+
+        return summary;
+    }
+
     public String getName() throws RemoteException {
         return m_name;
     }

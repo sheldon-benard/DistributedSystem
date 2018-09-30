@@ -51,7 +51,7 @@ public class Customer extends RMItem
 		return (ReservedItem)m_reservations.get(key);
 	}
 
-	public String getBill()
+	/*public String getBill()
 	{
 		String s = "Bill for customer " + m_ID + ": ";
 		for (String key : m_reservations.keySet())
@@ -60,7 +60,30 @@ public class Customer extends RMItem
 			s += "(" + item.getCount() + " " + item.getReservableItemKey() + " $" + item.getPrice() + ") ";
 		}
 		return s;
+	}*/
+
+	public String getBill()
+	{
+		String s = "Bill for customer " + m_ID + "\n";
+		for (String key : m_reservations.keySet())
+		{
+			ReservedItem item = (ReservedItem) m_reservations.get(key);
+			s += + item.getCount() + " " + item.getReservableItemKey() + " $" + item.getPrice() + "\n";
+		}
+		return s;
 	}
+
+	public String getSummary()
+	{
+		String s = "Customer " + m_ID + "\n";
+		for (String key : m_reservations.keySet())
+		{
+			ReservedItem item = (ReservedItem) m_reservations.get(key);
+			s += + item.getCount() + "x" + item.getReservableItemKey() + ": TOTAL= $" + item.getPrice()*item.getCount() + "\n";
+		}
+		return s;
+	}
+
 
 	public String toString()
 	{

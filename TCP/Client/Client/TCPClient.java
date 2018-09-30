@@ -75,9 +75,16 @@ public class TCPClient
 
 	public String sendMessage(String message) throws IOException {
 		out.println(message);
-		String r = in.readLine();
+		String returnString = "";
+		String inputLine;
+		while ((inputLine = in.readLine()) != null) {
+			if (returnString.length() == 0)
+				returnString += inputLine;
+			else
+				returnString += "\n" + inputLine;
+		}
 		connect(false);
-		return r;
+		return returnString;
 	}
 
 	public void stopTCPClient() {

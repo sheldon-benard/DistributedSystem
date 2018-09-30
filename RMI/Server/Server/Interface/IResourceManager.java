@@ -216,7 +216,26 @@ public interface IResourceManager extends Remote
      * @return Success
      */
     public boolean bundle(int id, int customerID, Vector<String> flightNumbers, String location, boolean car, boolean room)
-	throws RemoteException; 
+	throws RemoteException;
+
+    /**
+     *
+     *
+     *
+     * @param xid
+     * @return For every customer: items they have reserved and for what total price
+     * @throws RemoteException
+     */
+    public String Summary(int xid) throws RemoteException;
+
+    /**
+     *
+     * @param xid
+     * @param upperBound
+     * @return All items with remaining quantities <= upperBound
+     * @throws RemoteException
+     */
+    public String Analytics(int xid, int upperBound) throws RemoteException;
 
     /**
      * Convenience for probing the resource manager.

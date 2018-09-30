@@ -445,6 +445,34 @@ public class Middleware extends ResourceManager {
 
     }
 
+    public String Analytics(int xid, int upperBound)
+    {
+        String summary = "";
+        summary += "Flight Quantities\n";
+        try {
+            summary += m_flightResourceManager.sendMessage(String.format("Analytics,%d,%d", xid, upperBound)) + "\n";
+        } catch (Exception e) {
+            summary += "Error in retrieving quantities\n";
+        }
+
+        summary += "Car Quantities\n";
+        try {
+            summary += m_carResourceManager.sendMessage(String.format("Analytics,%d,%d", xid, upperBound)) + "\n";
+        } catch (Exception e) {
+            summary += "Error in retrieving quantities\n";
+        }
+
+        summary += "Room Quantities\n";
+        try {
+            summary += m_roomResourceManager.sendMessage(String.format("Analytics,%d,%d", xid, upperBound)) + "\n";
+        } catch (Exception e) {
+            summary += "Error in retrieving quantities\n";
+        }
+
+        return summary;
+    }
+
+
     private String send(TCPClient comm, char returnType, String command, boolean sync) {
         try {
             if (sync) {

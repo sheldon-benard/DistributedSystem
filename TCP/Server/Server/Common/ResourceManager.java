@@ -362,6 +362,32 @@ public class ResourceManager
 		return false;
 	}
 
+	public String Summary(int xid) {
+		String summary = "";
+
+		for (String key: m_data.keySet()) {
+			String type = key.split("-")[0];
+			if (!type.equals("customer"))
+				continue;
+			Customer customer = (Customer)readData(xid, key);
+			summary += customer.getSummary();
+
+		}
+		return summary;
+	}
+
+	public String Analytics(int xid, int upperBound)
+	{
+		String summary = "";
+
+		for (String key: m_data.keySet()) {
+			int quantity = 	queryPrice(xid, key);
+			if (quantity <= upperBound)
+				summary += key + ": RemainingQuantity=" + quantity + "\n";
+		}
+		return summary;
+	}
+
 	public String getName()
 	{
 		return m_name;

@@ -412,6 +412,30 @@ public abstract class Client
 				}
 				break;
 			}
+			case Summary: {
+				checkArgumentsCount(2, arguments.size());
+
+				System.out.println("Printing a client-resource summary [xid=" + arguments.elementAt(1) + "]");
+
+				int xid = toInt(arguments.elementAt(1));
+
+				String summary = m_resourceManager.Summary(xid);
+				System.out.print(summary);
+
+				break;
+			}
+			case Analytics: {
+				checkArgumentsCount(3, arguments.size());
+				System.out.println("Printing a quantity summary [xid=" + arguments.elementAt(1) + "]");
+				System.out.println("For all items with remaining quantities <= " + arguments.elementAt(2));
+
+				int id = toInt(arguments.elementAt(1));
+				int upperBound = toInt(arguments.elementAt(2));
+
+				String summary = m_resourceManager.Analytics(xid, upperBound);
+				System.out.print(summary);
+				break;
+			}
 			case Quit:
 				checkArgumentsCount(1, arguments.size());
 

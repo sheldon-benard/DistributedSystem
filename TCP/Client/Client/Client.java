@@ -362,6 +362,27 @@ public class Client
 				break;
 
 			}
+			case Summary: {
+				checkArgumentsCount(2, arguments.size());
+
+				System.out.println("Printing a client-resource summary [xid=" + arguments.elementAt(1) + "]");
+
+				int id = toInt(arguments.elementAt(1));
+
+				send(connection, arguments.toString(), "", "Could not print summary", 'S');
+				break;
+			}
+			case Analytics: {
+				checkArgumentsCount(3, arguments.size());
+				System.out.println("Printing a quantity summary [xid=" + arguments.elementAt(1) + "]");
+				System.out.println("For all items with remaining quantities <= " + arguments.elementAt(2));
+
+				int id = toInt(arguments.elementAt(1));
+				int upperBound = toInt(arguments.elementAt(2));
+
+				send(connection, arguments.toString(), "", "Could not print quantities", 'S');
+				break;
+			}
 			case Quit:
 				checkArgumentsCount(1, arguments.size());
 				connection.stopTCPClient();

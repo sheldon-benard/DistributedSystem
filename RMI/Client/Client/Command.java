@@ -28,6 +28,8 @@ public enum Command {
 	ReserveRoom("Reserve a room for a customer at a location", "<xid>,<CustomerID>,<Location>"),
 
 	Bundle("Book N flight numbers, and optionally a room and/or car at a location", "<xid>,<CustomerID>,<FlightNumber1>...<FlightNumberN>,<Location>,<Car-Y/N>,<Room-Y/N>"),
+	Summary("Print a full list of customer + resource delegation (who has reserved an item and at what price)", "<xid>"),
+	Analytics("Print a list of all reservable items whose quantities are less than (or equal to) the UpperBound provided", "<xid>,<UpperBound>"),
 
 	Quit("Exit the client application", "");
 

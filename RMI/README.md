@@ -1,16 +1,41 @@
-# comp512-project
+## Milestone 1
 
-To run the RMI resource manager:
+To run the Resource Managers (RMI registry port: 1099)
 
 ```
 cd Server/
-./run_server.sh [<rmi_name>] # starts a single ResourceManager
-./run_servers.sh # convenience script for starting multiple resource managers
+make
+./run_server.sh Flights
+./run_server.sh Cars
+./run_server.sh Rooms
 ```
 
-To run the RMI client:
+To run the Middleware
 
 ```
-cd Client
-./run_client.sh [<server_hostname> [<server_rmi_name>]]
+cd Server/
+make
+./run_middleware.sh Flights,<<ip-flights>>,1099 Cars,<<ip-cars>>,1099 Rooms,<<ip-rooms>>,1099
+```
+
+Run client
+
+```
+cd Client/
+make
+./run_client.sh <<ip-middleware>>
+```
+
+Run test
+
+```
+cd Client/
+make
+./run_client_test.sh <<ip-middleware>>
+```
+
+To get IP addresses:
+
+```
+hostname -I
 ```

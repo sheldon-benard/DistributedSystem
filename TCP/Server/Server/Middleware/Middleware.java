@@ -309,44 +309,45 @@ public class Middleware extends ResourceManager {
 
             synchronized (m_flightResourceManager) {
 
-                // Check availability
-                for (String key : countMap.keySet()) {
-                    int keyInt;
-
-                    try {
-                        keyInt = Integer.parseInt(key);
-                    } catch (Exception e) {
-                        Trace.warn("RM:bundle(" + xid + ", customer=" + customerID + ", " + flightNumbers.toString() + ", " + location + ")  failed--could not parse flightNumber");
-                        return false;
-                    }
-
-                    int price = -1;
-                    try {
-                        price = toInt(m_flightResourceManager.sendMessage(String.format("ItemsAvailable,%d,%s,%d", xid, Flight.getKey(keyInt), countMap.get(key))));
-                    } catch (Exception e) {
-                    }
-
-                    if (price < 0) {
-                        Trace.warn("RM:bundle(" + xid + ", customer=" + customerID + ", " + flightNumbers.toString() + ", " + location + ")  failed--flight-" + key + " doesn't have enough spots");
-                        return false;
-                    } else {
-                        flightPrice.put(keyInt, price);
-                    }
-                }
-
                 if (car && room) {
                     synchronized (m_carResourceManager) {
-
-                        try {
-                            carPrice = toInt(m_carResourceManager.sendMessage(String.format("ItemsAvailable,%d,%s,%d", xid, Car.getKey(location), 1)));
-                        } catch (Exception e) {
-                        }
-
-                        if (carPrice < 0) {
-                            Trace.warn("RM:bundle(" + xid + ", customer=" + customerID + ", " + flightNumbers.toString() + ", " + location + ")  failed--car-" + location + " doesn't have enough spots");
-                            return false;
-                        }
                         synchronized (m_roomResourceManager) {
+
+                            // Check flight availability
+                            for (String key : countMap.keySet()) {
+                                int keyInt;
+
+                                try {
+                                    keyInt = Integer.parseInt(key);
+                                } catch (Exception e) {
+                                    Trace.warn("RM:bundle(" + xid + ", customer=" + customerID + ", " + flightNumbers.toString() + ", " + location + ")  failed--could not parse flightNumber");
+                                    return false;
+                                }
+
+                                int price = -1;
+                                try {
+                                    price = toInt(m_flightResourceManager.sendMessage(String.format("ItemsAvailable,%d,%s,%d", xid, Flight.getKey(keyInt), countMap.get(key))));
+                                } catch (Exception e) {
+                                }
+
+                                if (price < 0) {
+                                    Trace.warn("RM:bundle(" + xid + ", customer=" + customerID + ", " + flightNumbers.toString() + ", " + location + ")  failed--flight-" + key + " doesn't have enough spots");
+                                    return false;
+                                } else {
+                                    flightPrice.put(keyInt, price);
+                                }
+                            }
+
+                            try {
+                                carPrice = toInt(m_carResourceManager.sendMessage(String.format("ItemsAvailable,%d,%s,%d", xid, Car.getKey(location), 1)));
+                            } catch (Exception e) {
+                            }
+
+                            if (carPrice < 0) {
+                                Trace.warn("RM:bundle(" + xid + ", customer=" + customerID + ", " + flightNumbers.toString() + ", " + location + ")  failed--car-" + location + " doesn't have enough spots");
+                                return false;
+                            }
+
 
                             try {
                                 roomPrice = toInt(m_roomResourceManager.sendMessage(String.format("ItemsAvailable,%d,%s,%d", xid, Room.getKey(location), 1)));
@@ -365,21 +366,46 @@ public class Middleware extends ResourceManager {
 
                             customer.reserve(Room.getKey(location), location, roomPrice);
                             writeData(xid, customer.getKey(), customer);
+
+
+                            //m_carResourceManager.reserveCar(xid, customerID, location);
+
+                            try {
+                                toBool(m_carResourceManager.sendMessage(String.format("ReserveCar,%d,%d,%s", xid, customerID, location)));
+                            } catch (Exception e) {
+                            }
+                            customer.reserve(Car.getKey(location), location, carPrice);
+                            writeData(xid, customer.getKey(), customer);
                         }
-
-                        //m_carResourceManager.reserveCar(xid, customerID, location);
-
-                        try {
-                            toBool(m_carResourceManager.sendMessage(String.format("ReserveCar,%d,%d,%s", xid, customerID, location)));
-                        } catch (Exception e) {
-                        }
-                        customer.reserve(Car.getKey(location), location, carPrice);
-                        writeData(xid, customer.getKey(), customer);
-
                     }
 
                 } else if (car) {
                     synchronized (m_carResourceManager) {
+
+                        // Check flight availability
+                        for (String key : countMap.keySet()) {
+                            int keyInt;
+
+                            try {
+                                keyInt = Integer.parseInt(key);
+                            } catch (Exception e) {
+                                Trace.warn("RM:bundle(" + xid + ", customer=" + customerID + ", " + flightNumbers.toString() + ", " + location + ")  failed--could not parse flightNumber");
+                                return false;
+                            }
+
+                            int price = -1;
+                            try {
+                                price = toInt(m_flightResourceManager.sendMessage(String.format("ItemsAvailable,%d,%s,%d", xid, Flight.getKey(keyInt), countMap.get(key))));
+                            } catch (Exception e) {
+                            }
+
+                            if (price < 0) {
+                                Trace.warn("RM:bundle(" + xid + ", customer=" + customerID + ", " + flightNumbers.toString() + ", " + location + ")  failed--flight-" + key + " doesn't have enough spots");
+                                return false;
+                            } else {
+                                flightPrice.put(keyInt, price);
+                            }
+                        }
 
                         try {
                             carPrice = toInt(m_carResourceManager.sendMessage(String.format("ItemsAvailable,%d,%s,%d", xid, Car.getKey(location), 1)));
@@ -402,6 +428,31 @@ public class Middleware extends ResourceManager {
                 } else if (room) {
                     synchronized (m_roomResourceManager) {
 
+                        // Check flight availability
+                        for (String key : countMap.keySet()) {
+                            int keyInt;
+
+                            try {
+                                keyInt = Integer.parseInt(key);
+                            } catch (Exception e) {
+                                Trace.warn("RM:bundle(" + xid + ", customer=" + customerID + ", " + flightNumbers.toString() + ", " + location + ")  failed--could not parse flightNumber");
+                                return false;
+                            }
+
+                            int price = -1;
+                            try {
+                                price = toInt(m_flightResourceManager.sendMessage(String.format("ItemsAvailable,%d,%s,%d", xid, Flight.getKey(keyInt), countMap.get(key))));
+                            } catch (Exception e) {
+                            }
+
+                            if (price < 0) {
+                                Trace.warn("RM:bundle(" + xid + ", customer=" + customerID + ", " + flightNumbers.toString() + ", " + location + ")  failed--flight-" + key + " doesn't have enough spots");
+                                return false;
+                            } else {
+                                flightPrice.put(keyInt, price);
+                            }
+                        }
+
                         try {
                             roomPrice = toInt(m_roomResourceManager.sendMessage(String.format("ItemsAvailable,%d,%s,%d", xid, Room.getKey(location), 1)));
                         } catch (Exception e) {
@@ -422,8 +473,33 @@ public class Middleware extends ResourceManager {
                         writeData(xid, customer.getKey(), customer);
                     }
                 }
+                else {
+                    // Check flight availability
+                    for (String key : countMap.keySet()) {
+                        int keyInt;
 
-                // Reserve
+                        try {
+                            keyInt = Integer.parseInt(key);
+                        } catch (Exception e) {
+                            Trace.warn("RM:bundle(" + xid + ", customer=" + customerID + ", " + flightNumbers.toString() + ", " + location + ")  failed--could not parse flightNumber");
+                            return false;
+                        }
+
+                        int price = -1;
+                        try {
+                            price = toInt(m_flightResourceManager.sendMessage(String.format("ItemsAvailable,%d,%s,%d", xid, Flight.getKey(keyInt), countMap.get(key))));
+                        } catch (Exception e) {
+                        }
+
+                        if (price < 0) {
+                            Trace.warn("RM:bundle(" + xid + ", customer=" + customerID + ", " + flightNumbers.toString() + ", " + location + ")  failed--flight-" + key + " doesn't have enough spots");
+                            return false;
+                        } else {
+                            flightPrice.put(keyInt, price);
+                        }
+                    }
+                }
+                // Reserve flights
                 for (Integer key : flightPrice.keySet()) {
                     for (int i = 0; i < countMap.get(String.valueOf(key)); i++) {
                         int price = flightPrice.get(key);

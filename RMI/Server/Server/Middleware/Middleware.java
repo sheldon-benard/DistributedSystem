@@ -511,6 +511,28 @@ public class Middleware extends ResourceManager {
                         writeData(xid, customer.getKey(), customer);
                     }
                 }
+                else{
+                    // Check flight availability
+                    for (String key : countMap.keySet()) {
+                        int keyInt;
+
+                        try {
+                            keyInt = Integer.parseInt(key);
+                        } catch (Exception e) {
+                            Trace.warn("RM:bundle(" + xid + ", customer=" + customerID + ", " + flightNumbers.toString() + ", " + location + ")  failed--could not parse flightNumber");
+                            return false;
+                        }
+
+                        int price = m_flightResourceManager.itemsAvailable(xid, Flight.getKey(keyInt), countMap.get(key));
+
+                        if (price < 0) {
+                            Trace.warn("RM:bundle(" + xid + ", customer=" + customerID + ", " + flightNumbers.toString() + ", " + location + ")  failed--flight-" + key + " doesn't have enough spots");
+                            return false;
+                        } else {
+                            flightPrice.put(keyInt, price);
+                        }
+                    }
+                }
 
                 // Reserve flights
                 for (Integer key : flightPrice.keySet()) {

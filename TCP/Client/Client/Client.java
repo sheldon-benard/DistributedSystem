@@ -394,6 +394,11 @@ public class Client
 	public static void send(TCPClient conn, String args, String success, String failure, char responseType) throws IOException {
 		String response = conn.sendMessage(args);
 		//System.out.println("Response: " + response);
+		if (response.equals("")) {
+			conn.connect(false);
+			response = conn.sendMessage(args);
+		}
+
 		if (response != null) {
 			try {
 				if (responseType == 'B' && toBoolean(response)) {

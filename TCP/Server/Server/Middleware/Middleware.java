@@ -550,11 +550,15 @@ public class Middleware extends ResourceManager {
 
 
     private String send(TCPClient comm, char returnType, String command, boolean sync) {
+        String res;
         try {
             if (sync) {
                 synchronized (comm) {
                     try {
-                        return comm.sendMessage(command);
+                        res = comm.sendMessage(command);
+                        if (res.equals(""))
+                            throw new IOException();
+                        return res;
                     } catch (IOException e) {
                         comm.connect();
                         return comm.sendMessage(command);
@@ -563,7 +567,10 @@ public class Middleware extends ResourceManager {
             }
             else {
                 try {
-                    return comm.sendMessage(command);
+                    res = comm.sendMessage(command);
+                    if (res.equals(""))
+                        throw new IOException();
+                    return res;
                 } catch (IOException e) {
                     comm.connect();
                     return comm.sendMessage(command);

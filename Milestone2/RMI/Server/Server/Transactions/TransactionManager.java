@@ -11,11 +11,7 @@ public class TransactionManager {
     }
 
     public void abort(int xid) {
-        Transaction t = readActiveData(xid);
-        if (t == null) {
-
-        }
-
+        
 
     }
 

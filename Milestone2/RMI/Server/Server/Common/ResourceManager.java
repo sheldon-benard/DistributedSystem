@@ -440,7 +440,7 @@ public class ResourceManager implements IResourceManager
 
 	public boolean commit(int xid) throws RemoteException,TransactionAbortedException, InvalidTransactionException
 	{
-		System.out.print("Commit transaction:" + xid);
+		System.out.println("Commit transaction:" + xid);
 		//flush transaction to m_data
 		if(!tm.xidActive(xid))
 			throw new InvalidTransactionException(xid, "Not a valid transaction");
@@ -451,7 +451,7 @@ public class ResourceManager implements IResourceManager
 		synchronized (m_data) {
 			Set<String> keyset = m.keySet();
 			for (String key : keyset) {
-				System.out.print("Write:(" + key + "," + m.get(key) + ")");
+				System.out.println("Write:(" + key + "," + m.get(key) + ")");
 				m_data.put(key, m.get(key));
 			}
 		}

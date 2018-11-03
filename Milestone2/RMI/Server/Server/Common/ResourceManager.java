@@ -464,7 +464,14 @@ public class ResourceManager implements IResourceManager
 	}
 
 	public void abort(int xid) throws RemoteException, InvalidTransactionException {
-		return;
+		System.out.println("Abort transaction:" + xid);
+
+		if(!tm.xidActive(xid))
+			throw new InvalidTransactionException(xid, "Not a valid transaction");
+
+		tm.writeActiveData(xid, null);
+		tm.writeInactiveData(xid, new Boolean(false));
+
 	}
 
 	public String getName() throws RemoteException

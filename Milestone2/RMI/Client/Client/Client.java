@@ -452,7 +452,7 @@ public abstract class Client
 			case Commit: {
 				checkArgumentsCount(2, arguments.size());
 				int xid = toInt(arguments.elementAt(1));
-				System.out.println("Attempting to commit transaction xid=");
+				System.out.println("Attempting to commit transaction xid=" + xid);
 				boolean commit = m_resourceManager.commit(xid);
 				if (commit)
 					System.out.println(xid + " was committed");

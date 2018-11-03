@@ -34,7 +34,7 @@ public class Middleware extends ResourceManager {
     public Middleware(String p_name)
     {
         super(p_name);
-        tm = new MiddlewareTM(timetolive);
+        tm = new MiddlewareTM(timetolive, this);
         lm = new LockManager();
     }
 
@@ -76,13 +76,38 @@ public class Middleware extends ResourceManager {
             }
         }
 
-        // Move to inactive transactions
-        tm.writeActiveData(xid, null);
-        tm.writeInactiveData(xid, new Boolean(true));
-
-        lm.UnlockAll(id);
+        endTransaction(xid, true);
 
         return true;
+    }
+
+    public void abort(int xid) throws RemoteException, InvalidTransactionException {
+        System.out.println("Abort transaction:" + xid);
+        checkTransaction(xid);
+
+        Transaction t = tm.readActiveData(xid);
+
+        Set<String> resources = t.getResourceManagers();
+
+        if (resources.contains("Flight"))
+            m_flightResourceManager.abort(xid);
+
+        if (resources.contains("Car"))
+            m_flightResourceManager.abort(xid);
+
+        if (resources.contains("Room"))
+            m_flightResourceManager.abort(xid);
+
+        endTransaction(xid, false);
+
+    }
+
+    private void endTransaction(int xid, boolean commit) {
+        // Move to inactive transactions
+        tm.writeActiveData(xid, null);
+        tm.writeInactiveData(xid, new Boolean(commit));
+
+        lm.UnlockAll(xid);
     }
 
     public boolean shutdown() throws RemoteException {
@@ -122,9 +147,6 @@ public class Middleware extends ResourceManager {
                 connectServer("Flight", s_flightServer.host, s_flightServer.port, s_flightServer.name);
                 return m_flightResourceManager.addFlight(id, flightNum, flightSeats, flightPrice);
             }
-        } catch (TransactionAbortedException a) {
-            tm.abort(id);
-            lm.UnlockAll(id);
         } catch (Exception e) {
             Trace.error(e.toString());
         }
@@ -146,9 +168,6 @@ public class Middleware extends ResourceManager {
                 connectServer("Car", s_carServer.host, s_carServer.port, s_carServer.name);
                 return m_carResourceManager.addCars(id, location, numCars, price);
             }
-        } catch (TransactionAbortedException a) {
-            tm.abort(id);
-            lm.UnlockAll(id);
         } catch (Exception e) {
             Trace.error(e.toString());
         }
@@ -870,8 +889,7 @@ public class Middleware extends ResourceManager {
             }
         } catch (DeadlockException e) {
             Trace.info("LM::lock(" + xid + ", " + data + ", " + lockType + ") " + e.getLocalizedMessage());
-            tm.abort(xid);
-            lm.UnlockAll(xid);
+            abort(xid);
             throw new TransactionAbortedException(xid, "The transaction has been aborted due to a deadlock");
         }
     }

@@ -25,6 +25,7 @@ public class Transaction {
 
     public boolean expired() {
         long time = date.getTime();
+        System.out.println(time + ">" + lastAction + "+" + timeToLive);
         if (time > lastAction + timeToLive)
             return true;
         return false;

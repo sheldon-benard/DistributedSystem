@@ -32,7 +32,6 @@ public class MiddlewareTM extends TransactionManager implements Runnable {
                 synchronized(activeTransactions) {
                     Set<Integer> keyset = activeTransactions.keySet();
                     for (Integer key : keyset) {
-                        System.out.println("Check" + key);
                         Transaction t = activeTransactions.get(key);
 
                         if (t != null && t.expired()) {

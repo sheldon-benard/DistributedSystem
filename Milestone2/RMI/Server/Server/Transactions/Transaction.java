@@ -8,8 +8,7 @@ public class Transaction {
 
     protected int xid;
     protected RMHashMap m_data = new RMHashMap();
-    private Date date = new Date();
-    private long lastAction =   date.getTime();
+    private long lastAction = (new Date()).getTime();
     private Set<String> resourceManagers = new HashSet<String>();
     private int timeToLive; // in milliseconds
 
@@ -24,15 +23,14 @@ public class Transaction {
     }
 
     public boolean expired() {
-        long time = date.getTime();
-        System.out.println(time + ">" + lastAction + "+" + timeToLive);
+        long time = (new Date()).getTime();
         if (time > lastAction + timeToLive)
             return true;
         return false;
     }
 
     public void updateLastAction() {
-        this.lastAction = date.getTime();
+        this.lastAction = (new Date()).getTime();
     }
 
     public RMHashMap getData() {

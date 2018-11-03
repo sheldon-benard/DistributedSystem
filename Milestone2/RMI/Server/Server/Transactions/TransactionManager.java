@@ -10,11 +10,6 @@ public class TransactionManager {
     public TransactionManager () {
     }
 
-    public void abort(int xid) {
-
-
-    }
-
     public boolean xidActive(int xid) {
         synchronized(activeTransactions) {
             synchronized (inactiveTransactions) {

@@ -83,7 +83,11 @@ public class Middleware extends ResourceManager {
 
     public void abort(int xid) throws RemoteException, InvalidTransactionException {
         System.out.println("Abort transaction:" + xid);
-        checkTransaction(xid);
+        try {
+            checkTransaction(xid);
+        } catch(TransactionAbortedException e) {
+            throw new InvalidTransactionException(xid, "transaction already aborted");
+        }
 
         Transaction t = tm.readActiveData(xid);
 
@@ -108,6 +112,10 @@ public class Middleware extends ResourceManager {
         tm.writeInactiveData(xid, new Boolean(commit));
 
         lm.UnlockAll(xid);
+    }
+
+    private void updateTimeToLive(int xid) {
+        tm.readActiveData(xid).updateLastAction();
     }
 
     public boolean shutdown() throws RemoteException {
@@ -869,8 +877,10 @@ public class Middleware extends ResourceManager {
     }
 
     protected void checkTransaction(int xid) throws TransactionAbortedException, InvalidTransactionException{
-        if(tm.readActiveData(xid) != null)
+        if(tm.readActiveData(xid) != null) {
+            updateTimeToLive(xid);
             return;
+        }
         Boolean v = tm.readInactiveData(xid);
         if (v == null)
             throw new InvalidTransactionException(xid, "The transaction doesn't exist");
@@ -880,7 +890,7 @@ public class Middleware extends ResourceManager {
             throw new TransactionAbortedException(xid, "The transaction has been aborted");
     }
 
-    protected void acquireLock(int xid, String data, TransactionLockObject.LockType lockType) throws TransactionAbortedException, InvalidTransactionException{
+    protected void acquireLock(int xid, String data, TransactionLockObject.LockType lockType) throws RemoteException, TransactionAbortedException, InvalidTransactionException{
         try {
             boolean lock = lm.Lock(xid, data, lockType);
             if (!lock) {

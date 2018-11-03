@@ -30,6 +30,10 @@ public class Transaction {
         return false;
     }
 
+    public void updateLastAction() {
+        this.lastAction = date.getTime();
+    }
+
     public RMHashMap getData() {
         return m_data;
     }

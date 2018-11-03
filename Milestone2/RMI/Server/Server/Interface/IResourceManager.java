@@ -51,6 +51,11 @@ public interface IResourceManager extends Remote
             throws RemoteException;
 
     /**
+     * Add transaction to an resource manager's TransactionManager
+     */
+    public void addTransaction(int xid) throws RemoteException;
+
+    /**
      * Add seats to a flight.
      *
      * In general this will be used to create a new

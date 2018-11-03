@@ -2,6 +2,7 @@ package Server.Transactions;
 
 import Server.Common.*;
 import java.util.Date;
+import java.util.*;
 
 public class Transaction {
 
@@ -9,6 +10,7 @@ public class Transaction {
     protected RMHashMap m_data = new RMHashMap();
     private Date date = new Date();
     private long lastAction =   date.getTime();
+    private Set<String> resourceManagers = new HashSet<String>();
     private int timeToLive; // in milliseconds
 
     // Time to live in seconds
@@ -17,19 +19,38 @@ public class Transaction {
         this.timeToLive = timeToLive * 1000;
     }
 
-    protected boolean expired() {
+    public Transaction (int xid) {
+        this.xid = xid;
+    }
+
+    public boolean expired() {
         long time = date.getTime();
         if (time > lastAction + timeToLive)
             return true;
         return false;
     }
 
-    protected int getXid() {
+    public void addResourceManager(String rm) {
+        resourceManagers.add(rm);
+    }
+
+    public Set<String> getResourceManagers() {
+        return resourceManagers;
+    }
+
+    public int getXid() {
         return this.xid;
     }
 
+    public boolean hasData(String key) {
+        synchronized (m_data) {
+            Set<String> keyset = m_data.keySet();
+            return keyset.contains(key);
+        }
+    }
+
     // Writes a data item
-    protected void writeData(int xid, String key, RMItem value)
+    public void writeData(int xid, String key, RMItem value)
     {
         synchronized(m_data) {
             m_data.put(key, value);
@@ -37,7 +58,7 @@ public class Transaction {
     }
 
     // Reads a data item
-    protected RMItem readData(int xid, String key)
+    public RMItem readData(int xid, String key)
     {
         synchronized(m_data) {
             RMItem item = m_data.get(key);

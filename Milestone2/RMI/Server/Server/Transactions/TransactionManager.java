@@ -7,8 +7,6 @@ public class TransactionManager {
     protected HashMap<Integer, Transaction> activeTransactions = new  HashMap<Integer, Transaction>();
     protected HashMap<Integer, Boolean> inactiveTransactions = new  HashMap<Integer, Boolean>(); //true -> committed; false -> aborted
 
-    protected int timetolive;
-
     public TransactionManager () {
     }
 
@@ -19,6 +17,13 @@ public class TransactionManager {
         }
 
 
+    }
+
+    public boolean xidActive(int xid) {
+        synchronized(activeTransactions) {
+            Set<Integer> keyset = activeTransactions.keySet();
+            return keyset.contains(xid);
+        }
     }
 
     // Reads a data item

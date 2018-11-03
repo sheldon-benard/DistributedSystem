@@ -40,6 +40,7 @@ public class Middleware extends ResourceManager {
 
     public int start() throws RemoteException{
         int xid  = tm.start();
+        Trace.info("Starting transaction - " + xid);
         return xid;
     }
 
@@ -65,12 +66,14 @@ public class Middleware extends ResourceManager {
         return true;
     }
 
-    public boolean addFlight(int id, int flightNum, int flightSeats, int flightPrice) throws RemoteException,TransactionAbortedException, InvalidTransactionException {
+    public boolean addFlight(int xid, int flightNum, int flightSeats, int flightPrice) throws RemoteException,TransactionAbortedException, InvalidTransactionException {
+        int id = xid;
+
         Trace.info("addFlight - Redirect to Flight Resource Manager");
         checkTransaction(id);
 
         acquireLock(id, Flight.getKey(flightNum), TransactionLockObject.LockType.LOCK_WRITE);
-
+        addResourceManagerUsed(id,"Flight");
         try {
             try {
                 return m_flightResourceManager.addFlight(id, flightNum, flightSeats, flightPrice);
@@ -87,13 +90,14 @@ public class Middleware extends ResourceManager {
         return false;
     }
 
-    public boolean addCars(int id, String location, int numCars, int price) throws RemoteException,TransactionAbortedException, InvalidTransactionException
+    public boolean addCars(int xid, String location, int numCars, int price) throws RemoteException,TransactionAbortedException, InvalidTransactionException
     {
+        int id = xid;
         Trace.info("addCars - Redirect to Car Resource Manager");
         checkTransaction(id);
 
         acquireLock(id, Car.getKey(location), TransactionLockObject.LockType.LOCK_WRITE);
-
+        addResourceManagerUsed(id,"Car");
         try {
             try {
                 return m_carResourceManager.addCars(id, location, numCars, price);
@@ -111,13 +115,14 @@ public class Middleware extends ResourceManager {
 
     }
 
-    public boolean addRooms(int id, String location, int numRooms, int price) throws RemoteException,TransactionAbortedException, InvalidTransactionException
+    public boolean addRooms(int xid, String location, int numRooms, int price) throws RemoteException,TransactionAbortedException, InvalidTransactionException
     {
+        int id = xid;
         Trace.info("addRooms - Redirect to Room Resource Manager");
         checkTransaction(id);
 
         acquireLock(id, Room.getKey(location), TransactionLockObject.LockType.LOCK_WRITE);
-
+        addResourceManagerUsed(id,"Room");
         try {
             try {
                 return m_roomResourceManager.addRooms(id, location, numRooms, price);
@@ -132,13 +137,14 @@ public class Middleware extends ResourceManager {
 
     }
 
-    public boolean deleteFlight(int id, int flightNum) throws RemoteException,TransactionAbortedException, InvalidTransactionException
+    public boolean deleteFlight(int xid, int flightNum) throws RemoteException,TransactionAbortedException, InvalidTransactionException
     {
+        int id = xid;
         Trace.info("deleteFlight - Redirect to Flight Resource Manager");
         checkTransaction(id);
 
         acquireLock(id, Flight.getKey(flightNum), TransactionLockObject.LockType.LOCK_WRITE);
-
+        addResourceManagerUsed(id,"Flight");
         try {
             try {
                 return m_flightResourceManager.deleteFlight(id, flightNum);
@@ -154,13 +160,14 @@ public class Middleware extends ResourceManager {
 
     }
 
-    public boolean deleteCars(int id, String location) throws RemoteException,TransactionAbortedException, InvalidTransactionException
+    public boolean deleteCars(int xid, String location) throws RemoteException,TransactionAbortedException, InvalidTransactionException
     {
+        int id = xid;
         Trace.info("deleteCars - Redirect to Car Resource Manager");
         checkTransaction(id);
 
         acquireLock(id, Car.getKey(location), TransactionLockObject.LockType.LOCK_WRITE);
-
+        addResourceManagerUsed(id,"Car");
         try {
             try {
                 return m_carResourceManager.deleteCars(id, location);
@@ -175,13 +182,14 @@ public class Middleware extends ResourceManager {
 
     }
 
-    public boolean deleteRooms(int id, String location) throws RemoteException,TransactionAbortedException, InvalidTransactionException
+    public boolean deleteRooms(int xid, String location) throws RemoteException,TransactionAbortedException, InvalidTransactionException
     {
+        int id = xid;
         Trace.info("deleteRooms - Redirect to Room Resource Manager");
         checkTransaction(id);
 
         acquireLock(id, Room.getKey(location), TransactionLockObject.LockType.LOCK_WRITE);
-
+        addResourceManagerUsed(id,"Room");
         try {
             try {
                 return m_roomResourceManager.deleteRooms(id, location);
@@ -198,11 +206,12 @@ public class Middleware extends ResourceManager {
 
     public boolean deleteCustomer(int xid, int customerID) throws RemoteException,TransactionAbortedException, InvalidTransactionException
     {
+        int id = xid;
         Trace.info("RM::deleteCustomer(" + xid + ", " + customerID + ") called");
         checkTransaction(xid);
 
         acquireLock(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_READ);
-
+        addResourceManagerUsed(id,"Customer");
         Customer customer = (Customer)readData(xid, Customer.getKey(customerID));
         if (customer == null)
         {
@@ -218,12 +227,15 @@ public class Middleware extends ResourceManager {
                 ReservedItem reserveditem = customer.getReservedItem(reservedKey);
                 if (type.equals("flight")) {
                     acquireLock(xid, reservedKey, TransactionLockObject.LockType.LOCK_WRITE);
+                    addResourceManagerUsed(id,"Flight");
                     m_flightResourceManager.removeReservation(xid, customerID, reserveditem.getKey(), reserveditem.getCount());
                 } else if (type.equals("car")) {
                     acquireLock(xid, reservedKey, TransactionLockObject.LockType.LOCK_WRITE);
+                    addResourceManagerUsed(id,"Car");
                     m_carResourceManager.removeReservation(xid, customerID, reserveditem.getKey(), reserveditem.getCount());
                 } else if (type.equals("room")) {
                     acquireLock(xid, reservedKey, TransactionLockObject.LockType.LOCK_WRITE);
+                    addResourceManagerUsed(id,"Room");
                     m_roomResourceManager.removeReservation(xid, customerID, reserveditem.getKey(), reserveditem.getCount());
                 } else
                     Trace.error("RM::deleteCustomer(" + xid + ", " + customerID + ") failed--reservedKey (" + reservedKey + ") wasn't of expected type.");
@@ -237,13 +249,14 @@ public class Middleware extends ResourceManager {
 
     }
 
-    public int queryFlight(int id, int flightNumber) throws RemoteException,TransactionAbortedException, InvalidTransactionException
+    public int queryFlight(int xid, int flightNumber) throws RemoteException,TransactionAbortedException, InvalidTransactionException
     {
+        int id = xid;
         Trace.info("queryFlight - Redirect to Flight Resource Manager");
         checkTransaction(id);
 
         acquireLock(id, Flight.getKey(flightNumber), TransactionLockObject.LockType.LOCK_READ);
-
+        addResourceManagerUsed(id,"Flight");
         try {
             try {
                 return m_flightResourceManager.queryFlight(id, flightNumber);
@@ -257,13 +270,14 @@ public class Middleware extends ResourceManager {
         }
     }
 
-    public int queryCars(int id, String location) throws RemoteException,TransactionAbortedException, InvalidTransactionException
+    public int queryCars(int xid, String location) throws RemoteException,TransactionAbortedException, InvalidTransactionException
     {
+        int id = xid;
         Trace.info("queryCars - Redirect to Car Resource Manager");
         checkTransaction(id);
 
         acquireLock(id, Car.getKey(location), TransactionLockObject.LockType.LOCK_READ);
-
+        addResourceManagerUsed(id,"Car");
         try {
             try {
                 return m_carResourceManager.queryCars(id, location);
@@ -277,13 +291,14 @@ public class Middleware extends ResourceManager {
         }
     }
 
-    public int queryRooms(int id, String location) throws RemoteException,TransactionAbortedException, InvalidTransactionException
+    public int queryRooms(int xid, String location) throws RemoteException,TransactionAbortedException, InvalidTransactionException
     {
+        int id = xid;
         Trace.info("queryRooms - Redirect to Room Resource Manager");
         checkTransaction(id);
 
         acquireLock(id, Room.getKey(location), TransactionLockObject.LockType.LOCK_READ);
-
+        addResourceManagerUsed(id,"Room");
         try {
             try {
                 return m_roomResourceManager.queryRooms(id, location);
@@ -297,13 +312,14 @@ public class Middleware extends ResourceManager {
         }
     }
 
-    public int queryFlightPrice(int id, int flightNumber) throws RemoteException,TransactionAbortedException, InvalidTransactionException
+    public int queryFlightPrice(int xid, int flightNumber) throws RemoteException,TransactionAbortedException, InvalidTransactionException
     {
+        int id = xid;
         Trace.info("queryFlightPrice - Redirect to Flight Resource Manager");
         checkTransaction(id);
 
         acquireLock(id, Flight.getKey(flightNumber), TransactionLockObject.LockType.LOCK_READ);
-
+        addResourceManagerUsed(id,"Flight");
         try {
             try {
                 return m_flightResourceManager.queryFlightPrice(id, flightNumber);
@@ -317,13 +333,14 @@ public class Middleware extends ResourceManager {
         }
     }
 
-    public int queryCarsPrice(int id, String location) throws RemoteException,TransactionAbortedException, InvalidTransactionException
+    public int queryCarsPrice(int xid, String location) throws RemoteException,TransactionAbortedException, InvalidTransactionException
     {
+        int id = xid;
         Trace.info("queryCarsPrice - Redirect to Car Resource Manager");
         checkTransaction(id);
 
         acquireLock(id, Car.getKey(location), TransactionLockObject.LockType.LOCK_READ);
-
+        addResourceManagerUsed(id,"Car");
         try {
             try {
                 return m_carResourceManager.queryCarsPrice(id, location);
@@ -337,13 +354,14 @@ public class Middleware extends ResourceManager {
         }
     }
 
-    public int queryRoomsPrice(int id, String location) throws RemoteException,TransactionAbortedException, InvalidTransactionException
+    public int queryRoomsPrice(int xid, String location) throws RemoteException,TransactionAbortedException, InvalidTransactionException
     {
+        int id = xid;
         Trace.info("queryRoomsPrice - Redirect to Room Resource Manager");
         checkTransaction(id);
 
         acquireLock(id, Room.getKey(location), TransactionLockObject.LockType.LOCK_READ);
-
+        addResourceManagerUsed(id,"Room");
         try {
             try {
                 return m_roomResourceManager.queryRoomsPrice(id, location);
@@ -359,6 +377,7 @@ public class Middleware extends ResourceManager {
 
     public boolean reserveFlight(int xid, int customerID, int flightNumber) throws RemoteException,TransactionAbortedException, InvalidTransactionException
     {
+        int id = xid;
         String key = Flight.getKey(flightNumber);
 
         Trace.info("RM::reserveFlight(" + xid + ", customer=" + customerID + ", " + key + ") called" );
@@ -366,6 +385,7 @@ public class Middleware extends ResourceManager {
         // Check customer exists
 
         acquireLock(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_READ);
+        addResourceManagerUsed(xid,"Customer");
         Customer customer = (Customer)readData(xid, Customer.getKey(customerID));
         if (customer == null)
         {
@@ -374,6 +394,7 @@ public class Middleware extends ResourceManager {
         }
 
         acquireLock(xid, key, TransactionLockObject.LockType.LOCK_READ);
+        addResourceManagerUsed(xid,"Flight");
         int price = m_flightResourceManager.itemsAvailable(xid, key, 1);
 
         if (price < 0) {
@@ -394,6 +415,7 @@ public class Middleware extends ResourceManager {
 
     public boolean reserveCar(int xid, int customerID, String location) throws RemoteException,TransactionAbortedException, InvalidTransactionException
     {
+        int id = xid;
         String key = Car.getKey(location);
 
         Trace.info("RM::reserveCar(" + xid + ", customer=" + customerID + ", " + key + ") called" );
@@ -401,6 +423,7 @@ public class Middleware extends ResourceManager {
         // Check customer exists
 
         acquireLock(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_READ);
+        addResourceManagerUsed(id,"Customer");
         Customer customer = (Customer)readData(xid, Customer.getKey(customerID));
         if (customer == null)
         {
@@ -409,6 +432,7 @@ public class Middleware extends ResourceManager {
         }
 
         acquireLock(xid, key, TransactionLockObject.LockType.LOCK_READ);
+        addResourceManagerUsed(id,"Car");
         int price = m_carResourceManager.itemsAvailable(xid, key, 1);
 
         if (price < 0) {
@@ -430,6 +454,7 @@ public class Middleware extends ResourceManager {
 
     public boolean reserveRoom(int xid, int customerID, String location) throws RemoteException,TransactionAbortedException, InvalidTransactionException
     {
+        int id = xid;
         String key = Room.getKey(location);
 
         Trace.info("RM::reserveRoom(" + xid + ", customer=" + customerID + ", " + key + ") called" );
@@ -437,6 +462,7 @@ public class Middleware extends ResourceManager {
         // Check customer exists
 
         acquireLock(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_READ);
+        addResourceManagerUsed(id,"Customer");
         Customer customer = (Customer)readData(xid, Customer.getKey(customerID));
         if (customer == null)
         {
@@ -445,6 +471,7 @@ public class Middleware extends ResourceManager {
         }
 
         acquireLock(xid, key, TransactionLockObject.LockType.LOCK_READ);
+        addResourceManagerUsed(id,"Room");
         int price = m_roomResourceManager.itemsAvailable(xid, key, 1);
 
         if (price < 0) {
@@ -465,10 +492,12 @@ public class Middleware extends ResourceManager {
 
     public boolean bundle(int xid, int customerID, Vector<String> flightNumbers, String location, boolean car, boolean room) throws RemoteException,TransactionAbortedException, InvalidTransactionException
     {
+        int id = xid;
         Trace.info("RM::bundle(" + xid + ", customer=" + customerID + ", " + flightNumbers.toString() + ", " + location + ") called" );
         checkTransaction(xid);
 
         acquireLock(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_READ);
+        addResourceManagerUsed(id,"Customer");
         Customer customer = (Customer)readData(xid, Customer.getKey(customerID));
         if (customer == null)
         {
@@ -498,6 +527,7 @@ public class Middleware extends ResourceManager {
                                     return false;
                                 }
                                 acquireLock(xid, Flight.getKey(keyInt), TransactionLockObject.LockType.LOCK_READ);
+                                addResourceManagerUsed(id,"Flight");
                                 int price = m_flightResourceManager.itemsAvailable(xid, Flight.getKey(keyInt), countMap.get(key));
 
                                 if (price < 0) {
@@ -508,6 +538,7 @@ public class Middleware extends ResourceManager {
                                 }
                             }
                             acquireLock(xid, Car.getKey(location), TransactionLockObject.LockType.LOCK_READ);
+                            addResourceManagerUsed(id,"Car");
                             carPrice = m_carResourceManager.itemsAvailable(xid, Car.getKey(location), 1);
 
                             if (carPrice < 0) {
@@ -516,6 +547,7 @@ public class Middleware extends ResourceManager {
                             }
 
                             acquireLock(xid, Room.getKey(location), TransactionLockObject.LockType.LOCK_READ);
+                            addResourceManagerUsed(id,"Room");
                             roomPrice = m_roomResourceManager.itemsAvailable(xid, Room.getKey(location), 1);
 
                             if (roomPrice < 0) {
@@ -527,6 +559,7 @@ public class Middleware extends ResourceManager {
                             m_roomResourceManager.reserveRoom(xid, customerID, location);
 
                             acquireLock(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_WRITE);
+                            addResourceManagerUsed(id,"Customer");
                             customer.reserve(Room.getKey(location), location, roomPrice);
 
                             writeData(xid, customer.getKey(), customer);
@@ -555,6 +588,7 @@ public class Middleware extends ResourceManager {
                                 return false;
                             }
                             acquireLock(xid, Flight.getKey(keyInt), TransactionLockObject.LockType.LOCK_READ);
+                            addResourceManagerUsed(id,"Flight");
                             int price = m_flightResourceManager.itemsAvailable(xid, Flight.getKey(keyInt), countMap.get(key));
 
                             if (price < 0) {
@@ -565,6 +599,7 @@ public class Middleware extends ResourceManager {
                             }
                         }
                         acquireLock(xid, Car.getKey(location), TransactionLockObject.LockType.LOCK_READ);
+                        addResourceManagerUsed(id,"Car");
                         carPrice = m_carResourceManager.itemsAvailable(xid, Car.getKey(location), 1);
 
                         if (carPrice < 0) {
@@ -575,6 +610,7 @@ public class Middleware extends ResourceManager {
                         m_carResourceManager.reserveCar(xid, customerID, location);
 
                         acquireLock(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_WRITE);
+                        addResourceManagerUsed(id,"Customer");
                         customer.reserve(Car.getKey(location), location, carPrice);
                         writeData(xid, customer.getKey(), customer);
 
@@ -593,6 +629,7 @@ public class Middleware extends ResourceManager {
                                 return false;
                             }
                             acquireLock(xid, Flight.getKey(keyInt), TransactionLockObject.LockType.LOCK_READ);
+                            addResourceManagerUsed(id,"Flight");
                             int price = m_flightResourceManager.itemsAvailable(xid, Flight.getKey(keyInt), countMap.get(key));
 
                             if (price < 0) {
@@ -603,6 +640,7 @@ public class Middleware extends ResourceManager {
                             }
                         }
                         acquireLock(xid, Room.getKey(location), TransactionLockObject.LockType.LOCK_READ);
+                        addResourceManagerUsed(id,"Room");
                         roomPrice = m_roomResourceManager.itemsAvailable(xid, Room.getKey(location), 1);
 
                         if (roomPrice < 0) {
@@ -613,6 +651,7 @@ public class Middleware extends ResourceManager {
                         m_roomResourceManager.reserveRoom(xid, customerID, location);
 
                         acquireLock(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_WRITE);
+                        addResourceManagerUsed(id,"Customer");
                         customer.reserve(Room.getKey(location), location, roomPrice);
                         writeData(xid, customer.getKey(), customer);
                     }
@@ -629,6 +668,7 @@ public class Middleware extends ResourceManager {
                             return false;
                         }
                         acquireLock(xid, Flight.getKey(keyInt), TransactionLockObject.LockType.LOCK_READ);
+                        addResourceManagerUsed(id,"Flight");
                         int price = m_flightResourceManager.itemsAvailable(xid, Flight.getKey(keyInt), countMap.get(key));
 
                         if (price < 0) {
@@ -640,8 +680,10 @@ public class Middleware extends ResourceManager {
                     }
                 }
 
-                if (flightPrice.keySet().size() > 0)
+                if (flightPrice.keySet().size() > 0) {
                     acquireLock(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_WRITE);
+                    addResourceManagerUsed(id,"Customer");
+                }
                 // Reserve flights
                 for (Integer key : flightPrice.keySet()) {
                     for (int i = 0; i < countMap.get(String.valueOf(key)); i++) {
@@ -662,6 +704,7 @@ public class Middleware extends ResourceManager {
 
     public String Analytics(int xid, int upperBound) throws RemoteException,TransactionAbortedException, InvalidTransactionException
     {
+        int id = xid;
         Trace.info("RM::Analytics(" + xid + ", upperBound=" + upperBound + ") called" );
         checkTransaction(xid);
 
@@ -692,6 +735,7 @@ public class Middleware extends ResourceManager {
 
     public String Summary(int xid) throws RemoteException,TransactionAbortedException, InvalidTransactionException
     {
+        int id = xid;
         String summary = "";
 
         for (String key: m_data.keySet()) {
@@ -699,6 +743,7 @@ public class Middleware extends ResourceManager {
             if (!type.equals("customer"))
                 continue;
             acquireLock(xid, key, TransactionLockObject.LockType.LOCK_READ);
+            addResourceManagerUsed(id,"Customer");
             Customer customer = (Customer)readData(xid, key);
             summary += customer.getSummary();
 
@@ -768,7 +813,7 @@ public class Middleware extends ResourceManager {
             return;
         Boolean v = tm.readInactiveData(xid);
         if (v == null)
-            return;
+            throw new InvalidTransactionException(xid, "The transaction doesn't exist");
         else if (v.booleanValue() == true)
             throw new InvalidTransactionException(xid, "The transaction has already been committed");
         else
@@ -788,6 +833,54 @@ public class Middleware extends ResourceManager {
             lm.UnlockAll(xid);
             throw new TransactionAbortedException(xid, "The transaction has been aborted due to a deadlock");
         }
+    }
+
+    protected void addResourceManagerUsed(int xid, String resource) {
+        Transaction t = tm.readActiveData(xid);
+        t.addResourceManager(resource);
+
+        try {
+            try {
+
+                switch (resource) {
+                    case "Flight": {
+                        m_flightResourceManager.addTransaction(xid);
+                        break;
+                    }
+                    case "Car": {
+                        m_carResourceManager.addTransaction(xid);
+                        break;
+                    }
+                    case "Room": {
+                        m_roomResourceManager.addTransaction(xid);
+                        break;
+                    }
+                }
+
+            } catch (ConnectException e) {
+
+                switch (resource) {
+                    case "Flight": {
+                        connectServer("Flight", s_flightServer.host, s_flightServer.port, s_flightServer.name);
+                        m_flightResourceManager.addTransaction(xid);
+                        break;
+                    }
+                    case "Car": {
+                        connectServer("Car", s_carServer.host, s_carServer.port, s_carServer.name);
+                        m_carResourceManager.addTransaction(xid);
+                        break;
+                    }
+                    case "Room": {
+                        connectServer("Room", s_roomServer.host, s_roomServer.port, s_roomServer.name);
+                        m_roomResourceManager.addTransaction(xid);
+                        break;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            Trace.error(e.toString());
+        }
+
     }
 
 }

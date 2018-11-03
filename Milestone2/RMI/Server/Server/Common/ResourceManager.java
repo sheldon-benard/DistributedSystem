@@ -6,6 +6,7 @@
 package Server.Common;
 
 import Server.Interface.*;
+import Server.Transactions.*;
 
 import java.util.*;
 import java.rmi.RemoteException;
@@ -15,30 +16,57 @@ public class ResourceManager implements IResourceManager
 {
 	protected String m_name = "";
 	protected RMHashMap m_data = new RMHashMap();
+	protected TransactionManager tm;
 
 	public ResourceManager(String p_name)
 	{
 		m_name = p_name;
+		tm = new TransactionManager();
 	}
 
-	// Reads a data item
-	protected RMItem readData(int xid, String key)
-	{
-		synchronized(m_data) {
-			RMItem item = m_data.get(key);
-			if (item != null) {
-				return (RMItem)item.clone();
-			}
-			return null;
+	public void addTransaction(int xid) throws RemoteException {
+		Trace.info("RM::addTransaction(" + xid + ") called");
+		if (!tm.xidActive(xid)) {
+			Trace.info("Transaction added");
+			Transaction t = new Transaction(xid);
+			tm.writeActiveData(xid, t);
 		}
+	}
+
+
+	// Reads a data item
+	protected RMItem readData(int xid, String key) throws InvalidTransactionException
+	{
+		if(!tm.xidActive(xid))
+			throw new InvalidTransactionException(xid, "Not a valid transaction");
+
+		Transaction t = tm.readActiveData(xid);
+
+		if (!t.hasData(key)) {
+			synchronized (m_data) {
+				RMItem item = m_data.get(key);
+				if (item != null) {
+					t.writeData(xid, key, (RMItem) item.clone());
+				}
+				else {
+					t.writeData(xid, key, null);
+				}
+			}
+		}
+
+		return t.readData(xid, key);
+
 	}
 
 	// Writes a data item
-	protected void writeData(int xid, String key, RMItem value)
+	protected void writeData(int xid, String key, RMItem value) throws InvalidTransactionException
 	{
-		synchronized(m_data) {
-			m_data.put(key, value);
-		}
+		if(!tm.xidActive(xid))
+			throw new InvalidTransactionException(xid, "Not a valid transaction");
+		readData(xid, key); // this ensures that the data is copied in the transaction local copy
+
+		Transaction t = tm.readActiveData(xid);
+		t.writeData(xid, key, value);
 	}
 
 	// Remove the item out of storage
@@ -50,7 +78,7 @@ public class ResourceManager implements IResourceManager
 	}
 
 	// Deletes the encar item
-	protected boolean deleteItem(int xid, String key)
+	protected boolean deleteItem(int xid, String key) throws InvalidTransactionException
 	{
 		Trace.info("RM::deleteItem(" + xid + ", " + key + ") called");
 		ReservableItem curObj = (ReservableItem)readData(xid, key);
@@ -77,7 +105,7 @@ public class ResourceManager implements IResourceManager
 	}
 
 	// Query the number of available seats/rooms/cars
-	protected int queryNum(int xid, String key)
+	protected int queryNum(int xid, String key) throws InvalidTransactionException
 	{
 		Trace.info("RM::queryNum(" + xid + ", " + key + ") called");
 		ReservableItem curObj = (ReservableItem)readData(xid, key);
@@ -91,7 +119,7 @@ public class ResourceManager implements IResourceManager
 	}    
 
 	// Query the price of an item
-	protected int queryPrice(int xid, String key)
+	protected int queryPrice(int xid, String key) throws InvalidTransactionException
 	{
 		Trace.info("RM::queryPrice(" + xid + ", " + key + ") called");
 		ReservableItem curObj = (ReservableItem)readData(xid, key);
@@ -105,7 +133,7 @@ public class ResourceManager implements IResourceManager
 	}
 
 	// Reserve an item
-	public boolean reserveItem(int xid, int customerID, String key, String location)
+	public boolean reserveItem(int xid, int customerID, String key, String location) throws InvalidTransactionException
 	{
 		if (itemsAvailable(xid, key,1) < 0)
 			return false;
@@ -120,7 +148,7 @@ public class ResourceManager implements IResourceManager
 
 	}
 
-	public int itemsAvailable(int xid, String key, int quantity) {
+	public int itemsAvailable(int xid, String key, int quantity) throws InvalidTransactionException {
 		// Check if the item is available
 		ReservableItem item = (ReservableItem)readData(xid, key);
 		if (item == null)

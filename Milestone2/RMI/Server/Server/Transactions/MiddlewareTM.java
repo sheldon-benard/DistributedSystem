@@ -6,6 +6,7 @@ import java.util.*;
 public class MiddlewareTM extends TransactionManager implements Runnable {
 
     private Integer startXid = 0;
+    private int timetolive;
 
     public int start() {
         int xid;
@@ -25,6 +26,7 @@ public class MiddlewareTM extends TransactionManager implements Runnable {
     public void run() {
         while(true) {
             try {
+                System.out.println("HERE");
                 synchronized(activeTransactions) {
                     Set<Integer> keyset = activeTransactions.keySet();
                     for (Integer key : keyset) {

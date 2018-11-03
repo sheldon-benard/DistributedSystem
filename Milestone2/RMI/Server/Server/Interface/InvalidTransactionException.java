@@ -6,7 +6,7 @@ public class InvalidTransactionException extends Exception
 
     public InvalidTransactionException(int xid, String msg)
     {
-        super("The transaction " + xid + " is invalid:" + msg);
+        super("Transaction " + xid + " is invalid:" + msg);
         m_xid = xid;
     }
 

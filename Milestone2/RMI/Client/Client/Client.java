@@ -60,6 +60,12 @@ public abstract class Client
 			catch (ConnectException|UnmarshalException e) {
 				System.err.println((char)27 + "[31;1mCommand exception: " + (char)27 + "[0mConnection to server lost");
 			}
+			catch (InvalidTransactionException e) {
+				System.err.println((char)27 + "[31;1mInvalid Transaction exception: " + (char)27 + "[0m" + e.getLocalizedMessage());
+			}
+			catch (TransactionAbortedException e) {
+				System.err.println((char)27 + "[31;1mAborted Transaction exception: " + (char)27 + "[0m" + e.getLocalizedMessage());
+			}
 			catch (Exception e) {
 				System.err.println((char)27 + "[31;1mCommand exception: " + (char)27 + "[0mUncaught exception");
 				e.printStackTrace();
@@ -67,7 +73,7 @@ public abstract class Client
 		}
 	}
 
-	public void execute(Command cmd, Vector<String> arguments) throws RemoteException, NumberFormatException
+	public void execute(Command cmd, Vector<String> arguments) throws RemoteException, NumberFormatException, InvalidTransactionException, TransactionAbortedException
 	{
 		switch (cmd)
 		{
@@ -436,6 +442,42 @@ public abstract class Client
 				System.out.print(summary);
 				break;
 			}
+			case Start: {
+				checkArgumentsCount(1, arguments.size());
+				System.out.println("Starting a transaction:");
+				int xid = m_resourceManager.start();
+				System.out.println("xid=" + xid);
+				break;
+			}
+			case Commit: {
+				checkArgumentsCount(2, arguments.size());
+				int xid = toInt(arguments.elementAt(1));
+				System.out.println("Attempting to commit transaction xid=");
+				boolean commit = m_resourceManager.commit(xid);
+				if (commit)
+					System.out.println(xid + " was committed");
+				else
+					System.out.println(xid + " was aborted");
+
+				break;
+			}
+			case Abort: {
+				checkArgumentsCount(2, arguments.size());
+				int xid = toInt(arguments.elementAt(1));
+				System.out.println("Attempting to abort transaction xid=");
+				m_resourceManager.abort(xid);
+				System.out.println(xid + " was aborted");
+				break;
+			}
+			case Shutdown: {
+				checkArgumentsCount(1, arguments.size());
+				System.out.println("Graceful shutdown of architecture");
+				m_resourceManager.shutdown();
+				System.out.println("Quitting client");
+				System.exit(0);
+				break;
+			}
+
 			case Quit:
 				checkArgumentsCount(1, arguments.size());
 

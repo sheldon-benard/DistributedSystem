@@ -31,6 +31,11 @@ public enum Command {
 	Summary("Print a full list of customer + resource delegation (who has reserved an item and at what price)", "<xid>"),
 	Analytics("Print a list of all reservable items whose quantities are less than (or equal to) the UpperBound provided", "<xid>,<UpperBound>"),
 
+	Start("Start a Transaction (returns transaction xid)", ""),
+	Commit("Commit a transaction", "<xid>"),
+	Abort("Aborts a transaction", "<xid>"),
+	Shutdown("Shutdown the distributed architecture", ""),
+
 	Quit("Exit the client application", "");
 
 	String m_description;

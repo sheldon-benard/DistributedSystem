@@ -98,9 +98,10 @@ public class RMIMiddleware extends Middleware {
                         System.out.println("'" + s_serverName + "' resource manager unbound");
                     }
                     catch(Exception e) {
-                        System.err.println((char)27 + "[31;1mServer exception: " + (char)27 + "[0mUncaught exception");
-                        e.printStackTrace();
+                        //System.err.println((char)27 + "[31;1mServer exception: " + (char)27 + "[0mUncaught exception");
+                        //e.printStackTrace();
                     }
+                    System.out.println("'" + s_serverName + "' Shut down");
                 }
             });
             System.out.println("'" + s_serverName + "' resource manager server ready and bound to '" + s_rmiPrefix + s_serverName + "'");

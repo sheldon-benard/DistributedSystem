@@ -26,7 +26,6 @@ public class MiddlewareTM extends TransactionManager implements Runnable {
     public void run() {
         while(true) {
             try {
-                System.out.println("HERE");
                 synchronized(activeTransactions) {
                     Set<Integer> keyset = activeTransactions.keySet();
                     for (Integer key : keyset) {

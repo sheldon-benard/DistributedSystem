@@ -70,11 +70,14 @@ public class ResourceManager implements IResourceManager
 	}
 
 	// Remove the item out of storage
-	protected void removeData(int xid, String key)
+	protected void removeData(int xid, String key) throws InvalidTransactionException
 	{
-		synchronized(m_data) {
-			m_data.remove(key);
-		}
+		if(!tm.xidActive(xid))
+			throw new InvalidTransactionException(xid, "Not a valid transaction");
+		readData(xid, key); // this ensures that the data is copied in the transaction local copy
+
+		Transaction t = tm.readActiveData(xid);
+		t.writeData(xid, key, null);
 	}
 
 	// Deletes the encar item
@@ -437,7 +440,27 @@ public class ResourceManager implements IResourceManager
 
 	public boolean commit(int xid) throws RemoteException,TransactionAbortedException, InvalidTransactionException
 	{
-		return false;
+		System.out.print("Commit transaction:" + xid);
+		//flush transaction to m_data
+		if(!tm.xidActive(xid))
+			throw new InvalidTransactionException(xid, "Not a valid transaction");
+
+		Transaction t = tm.readActiveData(xid);
+		RMHashMap m = t.getData();
+
+		synchronized (m_data) {
+			Set<String> keyset = m.keySet();
+			for (String key : keyset) {
+				System.out.print("Write:(" + key + "," + m.get(key) + ")");
+				m_data.put(key, m.get(key));
+			}
+		}
+
+		// Move to inactive transactions
+		tm.writeActiveData(xid, null);
+		tm.writeInactiveData(xid, new Boolean(true));
+
+		return true;
 	}
 
 	public void abort(int xid) throws RemoteException, InvalidTransactionException {

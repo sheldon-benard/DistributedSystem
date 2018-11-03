@@ -44,6 +44,45 @@ public class Middleware extends ResourceManager {
         return xid;
     }
 
+    public boolean commit(int xid) throws RemoteException,TransactionAbortedException, InvalidTransactionException
+    {
+        int id = xid;
+        System.out.print("Commit transaction:" + xid);
+
+        checkTransaction(id);
+        Transaction t = tm.readActiveData(xid);
+
+        Set<String> resources = t.getResourceManagers();
+
+        if (resources.contains("Flight"))
+            m_flightResourceManager.commit(xid);
+
+        if (resources.contains("Car"))
+            m_flightResourceManager.commit(xid);
+
+        if (resources.contains("Room"))
+            m_flightResourceManager.commit(xid);
+
+        if (resources.contains("Customer")) {
+
+            RMHashMap m = t.getData();
+
+            synchronized (m_data) {
+                Set<String> keyset = m.keySet();
+                for (String key : keyset) {
+                    System.out.print("Write:(" + key + "," + m.get(key) + ")");
+                    m_data.put(key, m.get(key));
+                }
+            }
+        }
+
+        // Move to inactive transactions
+        tm.writeActiveData(xid, null);
+        tm.writeInactiveData(xid, new Boolean(true));
+
+        return true;
+    }
+
     public boolean shutdown() throws RemoteException {
         m_flightResourceManager.shutdown();
         m_carResourceManager.shutdown();

@@ -21,8 +21,11 @@ public class TransactionManager {
 
     public boolean xidActive(int xid) {
         synchronized(activeTransactions) {
-            Set<Integer> keyset = activeTransactions.keySet();
-            return keyset.contains(xid);
+            synchronized (inactiveTransactions) {
+                Set<Integer> keyset = activeTransactions.keySet();
+                Set<Integer> inkeyset = inactiveTransactions.keySet();
+                return keyset.contains(xid) && !inkeyset.contains(xid);
+            }
         }
     }
 

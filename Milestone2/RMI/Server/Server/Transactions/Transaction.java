@@ -30,6 +30,10 @@ public class Transaction {
         return false;
     }
 
+    public RMHashMap getData() {
+        return m_data;
+    }
+
     public void addResourceManager(String rm) {
         resourceManagers.add(rm);
     }

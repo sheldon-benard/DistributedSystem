@@ -80,6 +80,8 @@ public class Middleware extends ResourceManager {
         tm.writeActiveData(xid, null);
         tm.writeInactiveData(xid, new Boolean(true));
 
+        lm.UnlockAll(id);
+
         return true;
     }
 

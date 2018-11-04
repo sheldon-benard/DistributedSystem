@@ -408,15 +408,14 @@ public class ResourceManager implements IResourceManager
 		return summary;
 	}
 
-	public String Analytics(int xid, int upperBound) throws RemoteException,TransactionAbortedException, InvalidTransactionException
+	public String Analytics(int xid, String key, int upperBound) throws RemoteException,TransactionAbortedException, InvalidTransactionException
 	{
 		String summary = "";
 
-		for (String key: m_data.keySet()) {
-			int quantity = 	queryNum(xid, key);
-			if (quantity <= upperBound)
-				summary += key + ": RemainingQuantity=" + quantity + "\n";
-		}
+		int quantity = 	queryNum(xid, key);
+		if (quantity <= upperBound)
+			summary += key + ": RemainingQuantity=" + quantity + "\n";
+
 		return summary;
 	}
 

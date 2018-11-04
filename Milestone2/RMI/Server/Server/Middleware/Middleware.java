@@ -814,7 +814,7 @@ public class Middleware extends ResourceManager {
 
     }
 
-    public String Analytics(int xid, int upperBound) throws RemoteException,TransactionAbortedException, InvalidTransactionException
+    public String Analytics(int xid, String k, int upperBound) throws RemoteException,TransactionAbortedException, InvalidTransactionException
     {
         int id = xid;
         Trace.info("RM::Analytics(" + xid + ", upperBound=" + upperBound + ") called" );
@@ -843,15 +843,18 @@ public class Middleware extends ResourceManager {
 
                 switch (type) {
                     case "flight": {
-                        summary += m_flightResourceManager.Analytics(xid, upperBound);
+                        addResourceManagerUsed(id,"Flight");
+                        summary += m_flightResourceManager.Analytics(xid, reservation, upperBound);
                         break;
                     }
                     case "car": {
-                        summary += m_carResourceManager.Analytics(xid, upperBound);
+                        addResourceManagerUsed(id,"Car");
+                        summary += m_carResourceManager.Analytics(xid, reservation, upperBound);
                         break;
                     }
                     case "room": {
-                        summary += m_roomResourceManager.Analytics(xid, upperBound);
+                        addResourceManagerUsed(id,"Room");
+                        summary += m_roomResourceManager.Analytics(xid, reservation, upperBound);
                         break;
                     }
                 }

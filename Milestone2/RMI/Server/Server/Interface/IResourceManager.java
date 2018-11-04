@@ -268,7 +268,7 @@ public interface IResourceManager extends Remote
      * @return All items with remaining quantities <= upperBound
      * @throws RemoteException
      */
-    public String Analytics(int xid, int upperBound) throws RemoteException,TransactionAbortedException, InvalidTransactionException;
+    public String Analytics(int xid, String key, int upperBound) throws RemoteException,TransactionAbortedException, InvalidTransactionException;
 
     /**
      * Convenience for probing the resource manager.

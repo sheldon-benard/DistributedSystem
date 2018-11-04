@@ -438,7 +438,7 @@ public abstract class Client
 				int xid = toInt(arguments.elementAt(1));
 				int upperBound = toInt(arguments.elementAt(2));
 
-				String summary = m_resourceManager.Analytics(xid, upperBound);
+				String summary = m_resourceManager.Analytics(xid, "", upperBound);
 				System.out.print(summary);
 				break;
 			}

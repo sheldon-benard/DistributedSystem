@@ -432,8 +432,8 @@ public abstract class Client
 			}
 			case Analytics: {
 				checkArgumentsCount(3, arguments.size());
-				System.out.println("Printing a quantity summary [xid=" + arguments.elementAt(1) + "]");
-				System.out.println("For all items with remaining quantities <= " + arguments.elementAt(2));
+				System.out.println("Printing a quantity summary for itmes that have been reserved [xid=" + arguments.elementAt(1) + "]");
+				System.out.println("For all items (that have at least 1 reservation) with remaining quantities <= " + arguments.elementAt(2));
 
 				int xid = toInt(arguments.elementAt(1));
 				int upperBound = toInt(arguments.elementAt(2));

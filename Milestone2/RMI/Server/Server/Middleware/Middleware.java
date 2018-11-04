@@ -818,28 +818,44 @@ public class Middleware extends ResourceManager {
     {
         int id = xid;
         Trace.info("RM::Analytics(" + xid + ", upperBound=" + upperBound + ") called" );
+
         checkTransaction(xid);
+        Transaction t = tm.readActiveData(xid);
+        RMHashMap m = t.getData();
+        Set<String> keyset = new HashSet<String>(m.keySet());
+        keyset.addAll(m_data.keySet());
 
         String summary = "";
-        summary += "Flight Quantities\n";
-        try {
-            summary += m_flightResourceManager.Analytics(xid, upperBound);
-        } catch (Exception e) {
-            summary += "Error in retrieving quantities\n";
-        }
 
-        summary += "Car Quantities\n";
-        try {
-            summary += m_carResourceManager.Analytics(xid, upperBound);
-        } catch (Exception e) {
-            summary += "Error in retrieving quantities\n";
-        }
+        for (String key: keyset) {
+            acquireLock(xid, key, TransactionLockObject.LockType.LOCK_READ);
+            addResourceManagerUsed(id,"Customer");
+            Customer customer = (Customer)readData(xid, key);
 
-        summary += "Room Quantities\n";
-        try {
-            summary += m_roomResourceManager.Analytics(xid, upperBound);
-        } catch (Exception e) {
-            summary += "Error in retrieving quantities\n";
+            if (customer == null)
+                continue;
+
+            Set<String> reservations = customer.getReservations().keySet();
+
+            for (String reservation: reservations) {
+
+                String type = reservation.split("-")[0];
+
+                switch (type) {
+                    case "flight": {
+                        summary += m_flightResourceManager.Analytics(xid, upperBound);
+                        break;
+                    }
+                    case "car": {
+                        summary += m_carResourceManager.Analytics(xid, upperBound);
+                        break;
+                    }
+                    case "room": {
+                        summary += m_roomResourceManager.Analytics(xid, upperBound);
+                        break;
+                    }
+                }
+            }
         }
 
         return summary;

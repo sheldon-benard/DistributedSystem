@@ -12,8 +12,9 @@ import java.rmi.registry.Registry;
 import java.rmi.RemoteException;
 import java.rmi.NotBoundException;
 
-import java.util.*;
-import java.io.*;
+import java.rmi.ConnectException;
+import java.rmi.ServerException;
+import java.rmi.UnmarshalException;
 
 abstract class ClientTest extends Client {
 
@@ -73,8 +74,9 @@ abstract class ClientTest extends Client {
                 {"Bundle,2,124,200,200,200,200,200,100,100,100,100,Montreal,1,0", "Customer-124 reserved 5xFlight-200, 4xFlight-100, 1xCar-Montreal"},
 
                 {"Summary,2", "Cust 123, 124" },
-                //{"Analytics,1,9", "Prints: Flight-100 @ 5"},
-                //{"Analytics,1,20", "Prints: Flight-100 @ 5, Flight-200 @ 15, Cars-Montreal @ 13, Rooms-Montreal @ 14" },
+                {"Analytics,2,9", "Prints: Flight-100 @ 5"},
+                {"Analytics,2,20", "Prints: Flight-100 @ 5, Flight-200 @ 15, Cars-Montreal @ 13, Rooms-Montreal @ 14" },
+                {"Abort,2", "Txn=2 aborted"},
 
                 {"Quit", "Quit"}
         };
@@ -88,8 +90,22 @@ abstract class ClientTest extends Client {
                 execute(cmd, arguments);
                 System.out.println();
                 Thread.sleep(3000);
-            } catch(Exception e) {
-                System.out.println("Could not run test: " + test);
+            }
+            catch (IllegalArgumentException|ServerException e) {
+                System.err.println((char)27 + "[31;1mCommand exception: " + (char)27 + "[0m" + e.getLocalizedMessage());
+            }
+            catch (ConnectException|UnmarshalException e) {
+                System.err.println((char)27 + "[31;1mCommand exception: " + (char)27 + "[0mConnection to server lost");
+            }
+            catch (InvalidTransactionException e) {
+                System.err.println((char)27 + "[31;1mInvalid Transaction exception: " + (char)27 + "[0m" + e.getLocalizedMessage());
+            }
+            catch (TransactionAbortedException e) {
+                System.err.println((char)27 + "[31;1mAborted Transaction exception: " + (char)27 + "[0m" + e.getLocalizedMessage());
+            }
+            catch (Exception e) {
+                System.err.println((char)27 + "[31;1mCommand exception: " + (char)27 + "[0mUncaught exception");
+                e.printStackTrace();
             }
         }
 

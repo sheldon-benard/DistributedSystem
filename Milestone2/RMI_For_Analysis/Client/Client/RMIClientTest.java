@@ -26,91 +26,76 @@ abstract class ClientTest extends Client {
         super();
     }
 
-    public void start() {
-        String[][] tests = {
-                {"Start", "Start transaction xid=1"},
-                {"Addflight,1,100,10,100", "Expected: Add Flight - 10 for $100" },
-                {"Addflight,1,200,20,200", "Expected: Add Flight - 20 for $200" },
-                {"Addflight,1,300,20,200","Expected: Add Flight - 20 for $200" },
-                {"AddCustomerID,1,123", "Expected: Add Customer ID 123" },
-                {"AddCustomerID,1,124","Expected: Add Customer ID 124" },
-                {"AddCustomerID,1,125","Expected: Add Customer ID 125" },
-                {"AddCars,1,Montreal,15,15","Expected: Add Cars - 15 at Montreal for $15" },
-                {"AddRooms,1,Montreal,15,15", "Expected: Add Rooms - 15 at Montreal for $15" },
+    public void start(int clients, double throughput) {
 
-                {"DeleteFlight,1,300", "Flight-300 delete" },
-                {"DeleteCustomer,1,125",  "Customer-125 delete" },
-                {"DeleteCars,1,Montreal",  "Cars-Montreal delete" },
-                {"DeleteRooms,1,Montreal",  "Rooms-Montreal delete" },
+        int waitTime = (int)((1000 * clients) / throughput);
 
-                {"QueryCars,1,Montreal",  "Cars Quantity - 0" },
-                {"QueryRooms,1,Montreal",  "Rooms Quantity - 0" },
+        long startTime = 10*1000 + System.currentTimeMillis();
+        long variation = 30 + 1;
+        HashMap<Long, double[]> times = new HashMap<Long, double[]>();
 
-                {"AddCars,1,Montreal,15,16","Expected: Add Cars - 15 at Montreal for $16" },
-                {"AddRooms,1,Montreal,15,17", "Expected: Add Rooms - 15 at Montreal for $17" },
+        for (int i = 0; i < clients; i++) {
+            new Thread() {
+                @Override
+                public void run() {
+                    long id = Thread.currentThread().getId();
+                    times.put(id, new double[50]);
+                    double l = Math.random();
+                    int v;
+                    if (l < 0.5)
+                        v = waitTime - ((int)(variation*Math.random()));
+                    else
+                        v = waitTime + ((int)(variation*Math.random()));
 
-                {"QueryFlight,1,100","Flight has 10 seats" },
-                {"QueryFlight,1,300","Flight has 0 seats" },
+                    while (System.currentTimeMillis() < startTime){}
 
-                {"QueryCustomer,1,123", "Customer 123 has nothing on its bill"},
-                {"QueryCustomer,1,125","Customer 125 doesn't exist -> no bill printed" },
+                    for (int i = 0; i < 150; i++) {
+                        try {
+                            double rt = oneResourceManagerTransaction(i, i, i);
+                            if (i >= 100)
+                                times.get(id)[i - 100] = rt;
+                            Thread.sleep((int) (v - rt));
+                        } catch(Exception e){}
+                    }
+                    System.out.println(times);
 
-                {"QueryCars,1,Montreal","Cars - 15 available" },
-                {"QueryRooms,1,Montreal","Rooms - 15 available" },
 
-                {"QueryFlightPrice,1,100","Flight - $100" },
-                {"QueryRoomsPrice,1,Montreal","Room - $17" },
-                {"QueryCarsPrice,1,Montreal","Car - $16" },
+                }
 
-                {"ReserveFlight,1,123,100", "Flight - reserved" },
-                {"DeleteFlight,1,100","Flight - Can't be deleted" },
+            }.start();
 
-                {"ReserveCar,1,123,Montreal", "Car - reserved" },
-                {"ReserveRoom,1,123,Montreal",  "Room - reserved" },
-                {"Summary,1", "Customer 123 has Flight-100, Car-Montreal, Room-Montreal reserved" },
-                {"Commit,1", "Commit txn=1"},
-                {"Start", "Start txn=2"},
-                {"Bundle,1,124,200,200,200,200,200,100,100,100,100,Montreal,1,0", "Failure txn=1 committed already"},
-                {"Bundle,2,124,200,200,200,200,200,100,100,100,100,Montreal,1,0", "Customer-124 reserved 5xFlight-200, 4xFlight-100, 1xCar-Montreal"},
-
-                {"Summary,2", "Cust 123, 124" },
-                {"Analytics,2,9", "Prints: Flight-100 @ 5"},
-                {"Analytics,2,20", "Prints: Flight-100 @ 5, Flight-200 @ 15, Cars-Montreal @ 13, Rooms-Montreal @ 14" },
-                {"Abort,2", "Txn=2 aborted"},
-
-                {"Quit", "Quit"}
-        };
-        Vector<String> arguments = new Vector<String>();
-
-        for (String[] test : tests) {
-            System.out.println(ANSI_YELLOW + test[1] + ANSI_RESET);
-            arguments = parse(test[0]);
-            Command cmd = Command.fromString((String)arguments.elementAt(0));
-            try {
-                execute(cmd, arguments);
-                System.out.println();
-                Thread.sleep(3000);
-            }
-            catch (IllegalArgumentException|ServerException e) {
-                System.err.println((char)27 + "[31;1mCommand exception: " + (char)27 + "[0m" + e.getLocalizedMessage());
-            }
-            catch (ConnectException|UnmarshalException e) {
-                System.err.println((char)27 + "[31;1mCommand exception: " + (char)27 + "[0mConnection to server lost");
-            }
-            catch (InvalidTransactionException e) {
-                System.err.println((char)27 + "[31;1mInvalid Transaction exception: " + (char)27 + "[0m" + e.getLocalizedMessage());
-            }
-            catch (TransactionAbortedException e) {
-                System.err.println((char)27 + "[31;1mAborted Transaction exception: " + (char)27 + "[0m" + e.getLocalizedMessage());
-            }
-            catch (Exception e) {
-                System.err.println((char)27 + "[31;1mCommand exception: " + (char)27 + "[0mUncaught exception");
-                e.printStackTrace();
-            }
         }
 
 
     }
+
+    private double oneResourceManagerTransaction(int flightNum, int flightSeats, int flightPrice) throws Exception{
+        long startTime = System.currentTimeMillis();
+        int xid = m_resourceManager.start();
+        m_resourceManager.addFlight(xid, flightNum, flightSeats, flightPrice);
+        m_resourceManager.queryFlight(xid, flightNum);
+        m_resourceManager.addFlight(xid, flightNum, flightSeats, flightPrice);
+        m_resourceManager.queryFlightPrice(xid, flightNum);
+        m_resourceManager.addFlight(xid, flightNum, flightSeats, flightPrice);
+        m_resourceManager.deleteFlight(xid, flightNum);
+        long responseTime = System.currentTimeMillis() - startTime;
+        return responseTime;
+    }
+
+    private double allResourceManagerTransaction(int custID, int flightNum, int number, int price, String location) throws Exception {
+        long startTime = System.currentTimeMillis();
+        int xid = m_resourceManager.start();
+        m_resourceManager.addFlight(xid, flightNum, number, price);
+        m_resourceManager.addCars(xid, location, number, price);
+        m_resourceManager.addRooms(xid, location, number, price);
+        m_resourceManager.newCustomer(xid, custID);
+        m_resourceManager.reserveFlight(xid, custID, flightNum);
+        m_resourceManager.reserveCar(xid, custID, location);
+        long responseTime = System.currentTimeMillis() - startTime;
+        return responseTime;
+    }
+
+
 }
 
 public class RMIClientTest extends ClientTest
@@ -118,6 +103,8 @@ public class RMIClientTest extends ClientTest
     private static String s_serverHost = "localhost";
     private static int s_serverPort = 1099;
     private static String s_serverName = "Middleware";
+    private static int clients = 1;
+    private static double throughput = 1.0;
 
     private static String s_rmiPrefix = "group7";
 
@@ -125,13 +112,17 @@ public class RMIClientTest extends ClientTest
     {
         if (args.length > 0)
         {
-            s_serverHost = args[0];
-        }
-        if (args.length > 1)
-        {
-            s_serverName = args[1];
+            clients = Integer.parseInt(args[0]);
+            throughput = Double.parseDouble(args[1]);
         }
         if (args.length > 2)
+        {
+            s_serverHost = args[2];
+        }
+        if (args.length > 3) {
+            s_serverName = args[3];
+        }
+        if (args.length > 4)
         {
             System.err.println((char)27 + "[31;1mClient exception: " + (char)27 + "[0mUsage: java client.RMIClient [server_hostname [server_rmiobject]]");
             System.exit(1);
@@ -147,7 +138,7 @@ public class RMIClientTest extends ClientTest
         try {
             RMIClientTest client = new RMIClientTest();
             client.connectServer();
-            client.start();
+            client.start(clients, throughput);
         }
         catch (Exception e) {
             System.err.println((char)27 + "[31;1mClient exception: " + (char)27 + "[0mUncaught exception");

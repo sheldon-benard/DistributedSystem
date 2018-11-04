@@ -284,6 +284,7 @@ public class Middleware extends ResourceManager {
                 String.valueOf(Math.round(Math.random() * 100 + 1)));
         Customer customer = new Customer(cid);
         acquireLock(xid, customer.getKey(), TransactionLockObject.LockType.LOCK_WRITE);
+        addResourceManagerUsed(id,"Customer");
         writeData(xid, customer.getKey(), customer);
         Trace.info("RM::newCustomer(" + cid + ") returns ID=" + cid);
         return cid;
@@ -296,6 +297,7 @@ public class Middleware extends ResourceManager {
         int id = xid;
         checkTransaction(xid);
         acquireLock(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_READ);
+        addResourceManagerUsed(id,"Customer");
 
         Customer customer = (Customer)readData(xid, Customer.getKey(customerID));
         if (customer == null)

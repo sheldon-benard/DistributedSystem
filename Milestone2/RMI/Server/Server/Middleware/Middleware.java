@@ -827,6 +827,8 @@ public class Middleware extends ResourceManager {
 
         String summary = "";
 
+        Set<String> printed = new HashSet<String>();
+
         for (String key: keyset) {
             acquireLock(xid, key, TransactionLockObject.LockType.LOCK_READ);
             addResourceManagerUsed(id,"Customer");
@@ -838,6 +840,10 @@ public class Middleware extends ResourceManager {
             Set<String> reservations = customer.getReservations().keySet();
 
             for (String reservation: reservations) {
+
+                if (printed.contains(reservation))
+                    continue;
+                printed.add(reservation);
 
                 String type = reservation.split("-")[0];
 

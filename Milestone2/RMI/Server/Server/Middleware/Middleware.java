@@ -99,10 +99,10 @@ public class Middleware extends ResourceManager {
             m_flightResourceManager.abort(xid);
 
         if (resources.contains("Car"))
-            m_flightResourceManager.abort(xid);
+            m_carResourceManager.abort(xid);
 
         if (resources.contains("Room"))
-            m_flightResourceManager.abort(xid);
+            m_roomResourceManager.abort(xid);
 
         endTransaction(xid, false);
 

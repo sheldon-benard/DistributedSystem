@@ -24,6 +24,10 @@ public class ResourceManager implements IResourceManager
 		tm = new TransactionManager();
 	}
 
+	protected void setTransactionManager(TransactionManager tm) {
+		this.tm = tm;
+	}
+
 	public void addTransaction(int xid) throws RemoteException {
 		Trace.info("RM::addTransaction(" + xid + ") called");
 		if (!tm.xidActive(xid)) {

@@ -35,6 +35,7 @@ public class Middleware extends ResourceManager {
     {
         super(p_name);
         tm = new MiddlewareTM(timetolive, this);
+        this.setTransactionManager(tm);
         lm = new LockManager();
     }
 
@@ -68,10 +69,6 @@ public class Middleware extends ResourceManager {
         if (resources.contains("Customer")) {
 
             RMHashMap m = t.getData();
-
-            System.out.println("HERE");
-            System.out.println(m);
-            System.out.println("HERE");
 
             synchronized (m_data) {
                 Set<String> keyset = m.keySet();

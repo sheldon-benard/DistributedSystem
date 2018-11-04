@@ -27,6 +27,7 @@ abstract class ClientTest extends Client {
 
     public void start() {
         String[][] tests = {
+                {"Start", "Start transaction xid=1"},
                 {"Addflight,1,100,10,100", "Expected: Add Flight - 10 for $100" },
                 {"Addflight,1,200,20,200", "Expected: Add Flight - 20 for $200" },
                 {"Addflight,1,300,20,200","Expected: Add Flight - 20 for $200" },
@@ -66,10 +67,14 @@ abstract class ClientTest extends Client {
                 {"ReserveCar,1,123,Montreal", "Car - reserved" },
                 {"ReserveRoom,1,123,Montreal",  "Room - reserved" },
                 {"Summary,1", "Customer 123 has Flight-100, Car-Montreal, Room-Montreal reserved" },
-                {"Bundle,1,124,200,200,200,200,200,100,100,100,100,Montreal,1,0", "Customer-124 reserved 5xFlight-200, 4xFlight-100, 1xCar-Montreal"},
+                {"Commit,1", "Commit txn=1"},
+                {"Start", "Start txn=2"},
+                {"Bundle,1,124,200,200,200,200,200,100,100,100,100,Montreal,1,0", "Failure txn=1 committed already"},
+                {"Bundle,2,124,200,200,200,200,200,100,100,100,100,Montreal,1,0", "Customer-124 reserved 5xFlight-200, 4xFlight-100, 1xCar-Montreal"},
 
-                {"Analytics,1,9", "Prints: Flight-100 @ 5"},
-                {"Analytics,1,20", "Prints: Flight-100 @ 5, Flight-200 @ 15, Cars-Montreal @ 13, Rooms-Montreal @ 14" },
+                {"Summary,2", "Cust 123, 124" },
+                //{"Analytics,1,9", "Prints: Flight-100 @ 5"},
+                //{"Analytics,1,20", "Prints: Flight-100 @ 5, Flight-200 @ 15, Cars-Montreal @ 13, Rooms-Montreal @ 14" },
 
                 {"Quit", "Quit"}
         };

@@ -626,202 +626,192 @@ public class Middleware extends ResourceManager {
             Trace.warn("RM:bundle(" + xid + ", customer=" + customerID + ", " + flightNumbers.toString() + ", " + location + ")  failed--customer doesn't exist");
             return false;
         }
-        synchronized (customer) {
-            HashMap<String, Integer> countMap = countFlights(flightNumbers);
-            HashMap<Integer, Integer> flightPrice = new HashMap<Integer, Integer>();
-            int carPrice;
-            int roomPrice;
+        HashMap<String, Integer> countMap = countFlights(flightNumbers);
+        HashMap<Integer, Integer> flightPrice = new HashMap<Integer, Integer>();
+        int carPrice;
+        int roomPrice;
 
-            synchronized (m_flightResourceManager) {
+        if (car && room) {
+            // Check flight availability
+            for (String key : countMap.keySet()) {
+                int keyInt;
 
-                if (car && room) {
-                    synchronized (m_carResourceManager) {
-                        synchronized (m_roomResourceManager) {
-
-                            // Check flight availability
-                            for (String key : countMap.keySet()) {
-                                int keyInt;
-
-                                try {
-                                    keyInt = Integer.parseInt(key);
-                                } catch (Exception e) {
-                                    Trace.warn("RM:bundle(" + xid + ", customer=" + customerID + ", " + flightNumbers.toString() + ", " + location + ")  failed--could not parse flightNumber");
-                                    return false;
-                                }
-                                acquireLock(xid, Flight.getKey(keyInt), TransactionLockObject.LockType.LOCK_READ);
-                                addResourceManagerUsed(id,"Flight");
-                                int price = m_flightResourceManager.itemsAvailable(xid, Flight.getKey(keyInt), countMap.get(key));
-
-                                if (price < 0) {
-                                    Trace.warn("RM:bundle(" + xid + ", customer=" + customerID + ", " + flightNumbers.toString() + ", " + location + ")  failed--flight-" + key + " doesn't have enough spots");
-                                    return false;
-                                } else {
-                                    flightPrice.put(keyInt, price);
-                                }
-                            }
-                            acquireLock(xid, Car.getKey(location), TransactionLockObject.LockType.LOCK_READ);
-                            addResourceManagerUsed(id,"Car");
-                            carPrice = m_carResourceManager.itemsAvailable(xid, Car.getKey(location), 1);
-
-                            if (carPrice < 0) {
-                                Trace.warn("RM:bundle(" + xid + ", customer=" + customerID + ", " + flightNumbers.toString() + ", " + location + ")  failed--car-" + location + " doesn't have enough spots");
-                                return false;
-                            }
-
-                            acquireLock(xid, Room.getKey(location), TransactionLockObject.LockType.LOCK_READ);
-                            addResourceManagerUsed(id,"Room");
-                            roomPrice = m_roomResourceManager.itemsAvailable(xid, Room.getKey(location), 1);
-
-                            if (roomPrice < 0) {
-                                Trace.warn("RM:bundle(" + xid + ", customer=" + customerID + ", " + flightNumbers.toString() + ", " + location + ")  failed--room-" + location + " doesn't have enough spots");
-                                return false;
-                            }
-
-                            acquireLock(xid, Room.getKey(location), TransactionLockObject.LockType.LOCK_WRITE);
-                            m_roomResourceManager.reserveRoom(xid, customerID, location);
-
-                            acquireLock(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_WRITE);
-                            addResourceManagerUsed(id,"Customer");
-                            customer.reserve(Room.getKey(location), location, roomPrice);
-
-                            writeData(xid, customer.getKey(), customer);
-
-                            acquireLock(xid, Car.getKey(location), TransactionLockObject.LockType.LOCK_WRITE);
-                            m_carResourceManager.reserveCar(xid, customerID, location);
-
-                            // Already have customer LOCK_WRITE
-                            customer.reserve(Car.getKey(location), location, carPrice);
-                            writeData(xid, customer.getKey(), customer);
-
-                        }
-                    }
-
-                } else if (car) {
-                    synchronized (m_carResourceManager) {
-
-                        // Check flight availability
-                        for (String key : countMap.keySet()) {
-                            int keyInt;
-
-                            try {
-                                keyInt = Integer.parseInt(key);
-                            } catch (Exception e) {
-                                Trace.warn("RM:bundle(" + xid + ", customer=" + customerID + ", " + flightNumbers.toString() + ", " + location + ")  failed--could not parse flightNumber");
-                                return false;
-                            }
-                            acquireLock(xid, Flight.getKey(keyInt), TransactionLockObject.LockType.LOCK_READ);
-                            addResourceManagerUsed(id,"Flight");
-                            int price = m_flightResourceManager.itemsAvailable(xid, Flight.getKey(keyInt), countMap.get(key));
-
-                            if (price < 0) {
-                                Trace.warn("RM:bundle(" + xid + ", customer=" + customerID + ", " + flightNumbers.toString() + ", " + location + ")  failed--flight-" + key + " doesn't have enough spots");
-                                return false;
-                            } else {
-                                flightPrice.put(keyInt, price);
-                            }
-                        }
-                        acquireLock(xid, Car.getKey(location), TransactionLockObject.LockType.LOCK_READ);
-                        addResourceManagerUsed(id,"Car");
-                        carPrice = m_carResourceManager.itemsAvailable(xid, Car.getKey(location), 1);
-
-                        if (carPrice < 0) {
-                            Trace.warn("RM:bundle(" + xid + ", customer=" + customerID + ", " + flightNumbers.toString() + ", " + location + ")  failed--car-" + location + " doesn't have enough spots");
-                            return false;
-                        }
-                        acquireLock(xid, Car.getKey(location), TransactionLockObject.LockType.LOCK_WRITE);
-                        m_carResourceManager.reserveCar(xid, customerID, location);
-
-                        acquireLock(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_WRITE);
-                        addResourceManagerUsed(id,"Customer");
-                        customer.reserve(Car.getKey(location), location, carPrice);
-                        writeData(xid, customer.getKey(), customer);
-
-                    }
-                } else if (room) {
-                    synchronized (m_roomResourceManager) {
-
-                        // Check flight availability
-                        for (String key : countMap.keySet()) {
-                            int keyInt;
-
-                            try {
-                                keyInt = Integer.parseInt(key);
-                            } catch (Exception e) {
-                                Trace.warn("RM:bundle(" + xid + ", customer=" + customerID + ", " + flightNumbers.toString() + ", " + location + ")  failed--could not parse flightNumber");
-                                return false;
-                            }
-                            acquireLock(xid, Flight.getKey(keyInt), TransactionLockObject.LockType.LOCK_READ);
-                            addResourceManagerUsed(id,"Flight");
-                            int price = m_flightResourceManager.itemsAvailable(xid, Flight.getKey(keyInt), countMap.get(key));
-
-                            if (price < 0) {
-                                Trace.warn("RM:bundle(" + xid + ", customer=" + customerID + ", " + flightNumbers.toString() + ", " + location + ")  failed--flight-" + key + " doesn't have enough spots");
-                                return false;
-                            } else {
-                                flightPrice.put(keyInt, price);
-                            }
-                        }
-                        acquireLock(xid, Room.getKey(location), TransactionLockObject.LockType.LOCK_READ);
-                        addResourceManagerUsed(id,"Room");
-                        roomPrice = m_roomResourceManager.itemsAvailable(xid, Room.getKey(location), 1);
-
-                        if (roomPrice < 0) {
-                            Trace.warn("RM:bundle(" + xid + ", customer=" + customerID + ", " + flightNumbers.toString() + ", " + location + ")  failed--room-" + location + " doesn't have enough spots");
-                            return false;
-                        }
-                        acquireLock(xid, Room.getKey(location), TransactionLockObject.LockType.LOCK_WRITE);
-                        m_roomResourceManager.reserveRoom(xid, customerID, location);
-
-                        acquireLock(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_WRITE);
-                        addResourceManagerUsed(id,"Customer");
-                        customer.reserve(Room.getKey(location), location, roomPrice);
-                        writeData(xid, customer.getKey(), customer);
-                    }
+                try {
+                    keyInt = Integer.parseInt(key);
+                } catch (Exception e) {
+                    Trace.warn("RM:bundle(" + xid + ", customer=" + customerID + ", " + flightNumbers.toString() + ", " + location + ")  failed--could not parse flightNumber");
+                    return false;
                 }
-                else{
-                    // Check flight availability
-                    for (String key : countMap.keySet()) {
-                        int keyInt;
+                acquireLock(xid, Flight.getKey(keyInt), TransactionLockObject.LockType.LOCK_READ);
+                addResourceManagerUsed(id,"Flight");
+                int price = m_flightResourceManager.itemsAvailable(xid, Flight.getKey(keyInt), countMap.get(key));
 
-                        try {
-                            keyInt = Integer.parseInt(key);
-                        } catch (Exception e) {
-                            Trace.warn("RM:bundle(" + xid + ", customer=" + customerID + ", " + flightNumbers.toString() + ", " + location + ")  failed--could not parse flightNumber");
-                            return false;
-                        }
-                        acquireLock(xid, Flight.getKey(keyInt), TransactionLockObject.LockType.LOCK_READ);
-                        addResourceManagerUsed(id,"Flight");
-                        int price = m_flightResourceManager.itemsAvailable(xid, Flight.getKey(keyInt), countMap.get(key));
-
-                        if (price < 0) {
-                            Trace.warn("RM:bundle(" + xid + ", customer=" + customerID + ", " + flightNumbers.toString() + ", " + location + ")  failed--flight-" + key + " doesn't have enough spots");
-                            return false;
-                        } else {
-                            flightPrice.put(keyInt, price);
-                        }
-                    }
+                if (price < 0) {
+                    Trace.warn("RM:bundle(" + xid + ", customer=" + customerID + ", " + flightNumbers.toString() + ", " + location + ")  failed--flight-" + key + " doesn't have enough spots");
+                    return false;
+                } else {
+                    flightPrice.put(keyInt, price);
                 }
-
-                if (flightPrice.keySet().size() > 0) {
-                    acquireLock(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_WRITE);
-                    addResourceManagerUsed(id,"Customer");
-                }
-                // Reserve flights
-                for (Integer key : flightPrice.keySet()) {
-                    for (int i = 0; i < countMap.get(String.valueOf(key)); i++) {
-                        int price = flightPrice.get(key);
-
-                        acquireLock(xid, Flight.getKey(key), TransactionLockObject.LockType.LOCK_WRITE);
-                        m_flightResourceManager.reserveFlight(xid, customerID, key);
-                        customer.reserve(Flight.getKey(key), String.valueOf(key), price);
-                        writeData(xid, customer.getKey(), customer);
-                    }
-                }
-
             }
-            Trace.info("RM:bundle() -- succeeded");
-            return true;
+            acquireLock(xid, Car.getKey(location), TransactionLockObject.LockType.LOCK_READ);
+            addResourceManagerUsed(id,"Car");
+            carPrice = m_carResourceManager.itemsAvailable(xid, Car.getKey(location), 1);
+
+            if (carPrice < 0) {
+                Trace.warn("RM:bundle(" + xid + ", customer=" + customerID + ", " + flightNumbers.toString() + ", " + location + ")  failed--car-" + location + " doesn't have enough spots");
+                return false;
+            }
+
+            acquireLock(xid, Room.getKey(location), TransactionLockObject.LockType.LOCK_READ);
+            addResourceManagerUsed(id,"Room");
+            roomPrice = m_roomResourceManager.itemsAvailable(xid, Room.getKey(location), 1);
+
+            if (roomPrice < 0) {
+                Trace.warn("RM:bundle(" + xid + ", customer=" + customerID + ", " + flightNumbers.toString() + ", " + location + ")  failed--room-" + location + " doesn't have enough spots");
+                return false;
+            }
+
+            acquireLock(xid, Room.getKey(location), TransactionLockObject.LockType.LOCK_WRITE);
+            m_roomResourceManager.reserveRoom(xid, customerID, location);
+
+            acquireLock(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_WRITE);
+            addResourceManagerUsed(id,"Customer");
+            customer.reserve(Room.getKey(location), location, roomPrice);
+
+            writeData(xid, customer.getKey(), customer);
+
+            acquireLock(xid, Car.getKey(location), TransactionLockObject.LockType.LOCK_WRITE);
+            m_carResourceManager.reserveCar(xid, customerID, location);
+
+            // Already have customer LOCK_WRITE
+            customer.reserve(Car.getKey(location), location, carPrice);
+            writeData(xid, customer.getKey(), customer);
+
+
+
+
+        } else if (car) {
+            // Check flight availability
+            for (String key : countMap.keySet()) {
+                int keyInt;
+
+                try {
+                    keyInt = Integer.parseInt(key);
+                } catch (Exception e) {
+                    Trace.warn("RM:bundle(" + xid + ", customer=" + customerID + ", " + flightNumbers.toString() + ", " + location + ")  failed--could not parse flightNumber");
+                    return false;
+                }
+                acquireLock(xid, Flight.getKey(keyInt), TransactionLockObject.LockType.LOCK_READ);
+                addResourceManagerUsed(id,"Flight");
+                int price = m_flightResourceManager.itemsAvailable(xid, Flight.getKey(keyInt), countMap.get(key));
+
+                if (price < 0) {
+                    Trace.warn("RM:bundle(" + xid + ", customer=" + customerID + ", " + flightNumbers.toString() + ", " + location + ")  failed--flight-" + key + " doesn't have enough spots");
+                    return false;
+                } else {
+                    flightPrice.put(keyInt, price);
+                }
+            }
+            acquireLock(xid, Car.getKey(location), TransactionLockObject.LockType.LOCK_READ);
+            addResourceManagerUsed(id,"Car");
+            carPrice = m_carResourceManager.itemsAvailable(xid, Car.getKey(location), 1);
+
+            if (carPrice < 0) {
+                Trace.warn("RM:bundle(" + xid + ", customer=" + customerID + ", " + flightNumbers.toString() + ", " + location + ")  failed--car-" + location + " doesn't have enough spots");
+                return false;
+            }
+            acquireLock(xid, Car.getKey(location), TransactionLockObject.LockType.LOCK_WRITE);
+            m_carResourceManager.reserveCar(xid, customerID, location);
+
+            acquireLock(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_WRITE);
+            addResourceManagerUsed(id,"Customer");
+            customer.reserve(Car.getKey(location), location, carPrice);
+            writeData(xid, customer.getKey(), customer);
+
+
+        } else if (room) {
+            // Check flight availability
+            for (String key : countMap.keySet()) {
+                int keyInt;
+
+                try {
+                    keyInt = Integer.parseInt(key);
+                } catch (Exception e) {
+                    Trace.warn("RM:bundle(" + xid + ", customer=" + customerID + ", " + flightNumbers.toString() + ", " + location + ")  failed--could not parse flightNumber");
+                    return false;
+                }
+                acquireLock(xid, Flight.getKey(keyInt), TransactionLockObject.LockType.LOCK_READ);
+                addResourceManagerUsed(id,"Flight");
+                int price = m_flightResourceManager.itemsAvailable(xid, Flight.getKey(keyInt), countMap.get(key));
+
+                if (price < 0) {
+                    Trace.warn("RM:bundle(" + xid + ", customer=" + customerID + ", " + flightNumbers.toString() + ", " + location + ")  failed--flight-" + key + " doesn't have enough spots");
+                    return false;
+                } else {
+                    flightPrice.put(keyInt, price);
+                }
+            }
+            acquireLock(xid, Room.getKey(location), TransactionLockObject.LockType.LOCK_READ);
+            addResourceManagerUsed(id,"Room");
+            roomPrice = m_roomResourceManager.itemsAvailable(xid, Room.getKey(location), 1);
+
+            if (roomPrice < 0) {
+                Trace.warn("RM:bundle(" + xid + ", customer=" + customerID + ", " + flightNumbers.toString() + ", " + location + ")  failed--room-" + location + " doesn't have enough spots");
+                return false;
+            }
+            acquireLock(xid, Room.getKey(location), TransactionLockObject.LockType.LOCK_WRITE);
+            m_roomResourceManager.reserveRoom(xid, customerID, location);
+
+            acquireLock(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_WRITE);
+            addResourceManagerUsed(id,"Customer");
+            customer.reserve(Room.getKey(location), location, roomPrice);
+            writeData(xid, customer.getKey(), customer);
+
         }
+        else{
+            // Check flight availability
+            for (String key : countMap.keySet()) {
+                int keyInt;
+
+                try {
+                    keyInt = Integer.parseInt(key);
+                } catch (Exception e) {
+                    Trace.warn("RM:bundle(" + xid + ", customer=" + customerID + ", " + flightNumbers.toString() + ", " + location + ")  failed--could not parse flightNumber");
+                    return false;
+                }
+                acquireLock(xid, Flight.getKey(keyInt), TransactionLockObject.LockType.LOCK_READ);
+                addResourceManagerUsed(id,"Flight");
+                int price = m_flightResourceManager.itemsAvailable(xid, Flight.getKey(keyInt), countMap.get(key));
+
+                if (price < 0) {
+                    Trace.warn("RM:bundle(" + xid + ", customer=" + customerID + ", " + flightNumbers.toString() + ", " + location + ")  failed--flight-" + key + " doesn't have enough spots");
+                    return false;
+                } else {
+                    flightPrice.put(keyInt, price);
+                }
+            }
+        }
+
+        if (flightPrice.keySet().size() > 0) {
+            acquireLock(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_WRITE);
+            addResourceManagerUsed(id,"Customer");
+        }
+        // Reserve flights
+        for (Integer key : flightPrice.keySet()) {
+            for (int i = 0; i < countMap.get(String.valueOf(key)); i++) {
+                int price = flightPrice.get(key);
+
+                acquireLock(xid, Flight.getKey(key), TransactionLockObject.LockType.LOCK_WRITE);
+                m_flightResourceManager.reserveFlight(xid, customerID, key);
+                customer.reserve(Flight.getKey(key), String.valueOf(key), price);
+                writeData(xid, customer.getKey(), customer);
+            }
+        }
+
+
+        Trace.info("RM:bundle() -- succeeded");
+        return true;
+
     }
 
     public String Analytics(int xid, int upperBound) throws RemoteException,TransactionAbortedException, InvalidTransactionException
@@ -858,16 +848,24 @@ public class Middleware extends ResourceManager {
     public String Summary(int xid) throws RemoteException,TransactionAbortedException, InvalidTransactionException
     {
         int id = xid;
+
+        checkTransaction(xid);
+        Transaction t = tm.readActiveData(xid);
+        RMHashMap m = t.getData();
+        Set<String> keyset = new HashSet<String>(m.keySet());
+        keyset.addAll(m_data.keySet());
+
         String summary = "";
 
-        for (String key: m_data.keySet()) {
+        for (String key: keyset) {
             String type = key.split("-")[0];
             if (!type.equals("customer"))
                 continue;
             acquireLock(xid, key, TransactionLockObject.LockType.LOCK_READ);
             addResourceManagerUsed(id,"Customer");
             Customer customer = (Customer)readData(xid, key);
-            summary += customer.getSummary();
+            if (customer != null)
+                summary += customer.getSummary();
 
         }
         return summary;

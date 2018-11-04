@@ -272,6 +272,14 @@ public class Middleware extends ResourceManager {
 
     }
 
+    public String queryCustomerInfo(int xid, int customerID) throws RemoteException,TransactionAbortedException, InvalidTransactionException
+    {
+        checkTransaction(xid);
+        acquireLock(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_READ);
+        addResourceManagerUsed(xid,"Customer");
+        return super.queryCustomerInfo(xid,customerID);
+    }
+
     public int newCustomer(int xid) throws RemoteException,TransactionAbortedException, InvalidTransactionException
     {
         int id = xid;

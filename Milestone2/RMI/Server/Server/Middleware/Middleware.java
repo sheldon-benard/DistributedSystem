@@ -54,14 +54,16 @@ public class Middleware extends ResourceManager {
 
         Set<String> resources = t.getResourceManagers();
 
+        Trace.info("Resource=" + resources);
+
         if (resources.contains("Flight"))
             m_flightResourceManager.commit(xid);
 
         if (resources.contains("Car"))
-            m_flightResourceManager.commit(xid);
+            m_carResourceManager.commit(xid);
 
         if (resources.contains("Room"))
-            m_flightResourceManager.commit(xid);
+            m_roomResourceManager.commit(xid);
 
         if (resources.contains("Customer")) {
 

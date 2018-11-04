@@ -29,7 +29,7 @@ public class Middleware extends ResourceManager {
 
     protected MiddlewareTM tm;
     protected LockManager lm;
-    private int timetolive = 30;
+    private int timetolive = 60;
 
     public Middleware(String p_name)
     {
@@ -270,6 +270,47 @@ public class Middleware extends ResourceManager {
             return false;
         }
 
+    }
+
+    public int newCustomer(int xid) throws RemoteException,TransactionAbortedException, InvalidTransactionException
+    {
+        int id = xid;
+        checkTransaction(xid);
+
+        Trace.info("RM::newCustomer(" + xid + ") called");
+        // Generate a globally unique ID for the new customer
+        int cid = Integer.parseInt(String.valueOf(xid) +
+                String.valueOf(Calendar.getInstance().get(Calendar.MILLISECOND)) +
+                String.valueOf(Math.round(Math.random() * 100 + 1)));
+        Customer customer = new Customer(cid);
+        acquireLock(xid, customer.getKey(), TransactionLockObject.LockType.LOCK_WRITE);
+        writeData(xid, customer.getKey(), customer);
+        Trace.info("RM::newCustomer(" + cid + ") returns ID=" + cid);
+        return cid;
+    }
+
+    public boolean newCustomer(int xid, int customerID) throws RemoteException,TransactionAbortedException, InvalidTransactionException
+    {
+        Trace.info("RM::newCustomer(" + xid + ", " + customerID + ") called");
+
+        int id = xid;
+        checkTransaction(xid);
+        acquireLock(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_READ);
+
+        Customer customer = (Customer)readData(xid, Customer.getKey(customerID));
+        if (customer == null)
+        {
+            acquireLock(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_WRITE);
+            customer = new Customer(customerID);
+            writeData(xid, customer.getKey(), customer);
+            Trace.info("RM::newCustomer(" + xid + ", " + customerID + ") created a new customer");
+            return true;
+        }
+        else
+        {
+            Trace.info("INFO: RM::newCustomer(" + xid + ", " + customerID + ") failed--customer already exists");
+            return false;
+        }
     }
 
     public boolean deleteCustomer(int xid, int customerID) throws RemoteException,TransactionAbortedException, InvalidTransactionException
@@ -881,6 +922,8 @@ public class Middleware extends ResourceManager {
             updateTimeToLive(xid);
             return;
         }
+        Trace.info("Transaction is not active: throw error");
+
         Boolean v = tm.readInactiveData(xid);
         if (v == null)
             throw new InvalidTransactionException(xid, "The transaction doesn't exist");
@@ -924,6 +967,9 @@ public class Middleware extends ResourceManager {
                         m_roomResourceManager.addTransaction(xid);
                         break;
                     }
+                    case "Customer": {
+                        this.addTransaction(xid);
+                    }
                 }
 
             } catch (ConnectException e) {
@@ -943,6 +989,9 @@ public class Middleware extends ResourceManager {
                         connectServer("Room", s_roomServer.host, s_roomServer.port, s_roomServer.name);
                         m_roomResourceManager.addTransaction(xid);
                         break;
+                    }
+                    case "Customer": {
+                        this.addTransaction(xid);
                     }
                 }
             }

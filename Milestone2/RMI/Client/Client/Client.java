@@ -464,7 +464,7 @@ public abstract class Client
 			case Abort: {
 				checkArgumentsCount(2, arguments.size());
 				int xid = toInt(arguments.elementAt(1));
-				System.out.println("Attempting to abort transaction xid=");
+				System.out.println("Attempting to abort transaction xid=" + xid);
 				m_resourceManager.abort(xid);
 				System.out.println(xid + " was aborted");
 				break;

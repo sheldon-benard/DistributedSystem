@@ -443,7 +443,7 @@ public class ResourceManager implements IResourceManager
 		System.out.println("Commit transaction:" + xid);
 		//flush transaction to m_data
 		if(!tm.xidActive(xid))
-			throw new InvalidTransactionException(xid, "Not a valid transaction");
+			throw new InvalidTransactionException(xid, "RM: Not a valid transaction");
 
 		Transaction t = tm.readActiveData(xid);
 		RMHashMap m = t.getData();

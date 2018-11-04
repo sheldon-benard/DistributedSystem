@@ -936,11 +936,11 @@ public class Middleware extends ResourceManager {
 
         Boolean v = tm.readInactiveData(xid);
         if (v == null)
-            throw new InvalidTransactionException(xid, "The transaction doesn't exist");
+            throw new InvalidTransactionException(xid, "MW: The transaction doesn't exist");
         else if (v.booleanValue() == true)
-            throw new InvalidTransactionException(xid, "The transaction has already been committed");
+            throw new InvalidTransactionException(xid, "MW: The transaction has already been committed");
         else
-            throw new TransactionAbortedException(xid, "The transaction has been aborted");
+            throw new TransactionAbortedException(xid, "MW: The transaction has been aborted");
     }
 
     protected void acquireLock(int xid, String data, TransactionLockObject.LockType lockType) throws RemoteException, TransactionAbortedException, InvalidTransactionException{

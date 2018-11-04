@@ -69,6 +69,10 @@ public class Middleware extends ResourceManager {
 
             RMHashMap m = t.getData();
 
+            System.out.println("HERE");
+            System.out.println(m);
+            System.out.println("HERE");
+
             synchronized (m_data) {
                 Set<String> keyset = m.keySet();
                 for (String key : keyset) {

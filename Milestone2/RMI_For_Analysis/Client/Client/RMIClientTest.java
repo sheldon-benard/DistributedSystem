@@ -16,56 +16,43 @@ import java.rmi.ConnectException;
 import java.rmi.ServerException;
 import java.rmi.UnmarshalException;
 
-abstract class ClientTest extends Client {
+abstract class ClientTest extends Client implements Runnable{
 
     public static final String ANSI_RESET = "\u001B[0m";
     public static final String ANSI_YELLOW = "\u001B[33m";
+    public double[] times = new double[50];
+    public int clients = 1;
+    public double throughput = 1.0;
 
     public ClientTest()
     {
         super();
     }
 
-    public void start(int clients, double throughput) {
+    public void run() {
 
         int waitTime = (int)((1000 * clients) / throughput);
 
-        long startTime = 10*1000 + System.currentTimeMillis();
+        long startTime = 5*1000 + System.currentTimeMillis();
         long variation = 30 + 1;
-        HashMap<Long, double[]> times = new HashMap<Long, double[]>();
 
-        for (int i = 0; i < clients; i++) {
-            new Thread() {
-                @Override
-                public void run() {
-                    long id = Thread.currentThread().getId();
-                    times.put(id, new double[50]);
-                    double l = Math.random();
-                    int v;
-                    if (l < 0.5)
-                        v = waitTime - ((int)(variation*Math.random()));
-                    else
-                        v = waitTime + ((int)(variation*Math.random()));
+        double l = Math.random();
+        int v;
+        if (l < 0.5)
+            v = waitTime - ((int)(variation*Math.random()));
+        else
+            v = waitTime + ((int)(variation*Math.random()));
 
-                    while (System.currentTimeMillis() < startTime){}
+        while (System.currentTimeMillis() < startTime){}
 
-                    for (int i = 0; i < 150; i++) {
-                        try {
-                            double rt = oneResourceManagerTransaction(i, i, i);
-                            if (i >= 100)
-                                times.get(id)[i - 100] = rt;
-                            Thread.sleep((int) (v - rt));
-                        } catch(Exception e){}
-                    }
-                    System.out.println(times);
-
-
-                }
-
-            }.start();
-
+        for (int i = 0; i < 150; i++) {
+            try {
+                double rt = oneResourceManagerTransaction(i, i, i);
+                if (i >= 100)
+                    times[i - 100] = rt;
+                Thread.sleep((int) (v - rt));
+            } catch(Exception e){}
         }
-
 
     }
 
@@ -136,9 +123,21 @@ public class RMIClientTest extends ClientTest
 
         // Get a reference to the RMIRegister
         try {
-            RMIClientTest client = new RMIClientTest();
-            client.connectServer();
-            client.start(clients, throughput);
+            RMIClientTest[] c = new RMIClientTest[clients];
+            Thread[] thread = new Thread[clients];
+            for (int i = 0; i < clients; i++) {
+                c[i] = new RMIClientTest();
+                c[i].clients = clients;
+                c[i].throughput = throughput;
+                c[i].connectServer();
+                thread[i] = new Thread(c[i]);
+                thread[i].start();
+            }
+
+            for (int i = 0; i < clients; i++) {
+                thread[i].join();
+                System.out.println(Arrays.toString(c[i].times));
+            }
         }
         catch (Exception e) {
             System.err.println((char)27 + "[31;1mClient exception: " + (char)27 + "[0mUncaught exception");

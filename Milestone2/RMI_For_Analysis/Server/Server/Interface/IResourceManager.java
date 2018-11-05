@@ -50,8 +50,6 @@ public interface IResourceManager extends Remote
     public boolean shutdown()
             throws RemoteException;
 
-    public void printTimes() throws RemoteException;
-
     /**
      * Add transaction to an resource manager's TransactionManager
      */

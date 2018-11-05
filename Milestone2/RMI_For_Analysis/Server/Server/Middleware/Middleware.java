@@ -30,13 +30,6 @@ public class Middleware extends ResourceManager {
     protected MiddlewareTM tm;
     protected LockManager lm;
     private int timetolive = 60;
-    protected HashMap<Integer, ArrayList<Double>> mwTimer = new HashMap<Integer, ArrayList<Double>>();
-
-    private void addTimeMW(int xid, long s) {
-        if (mwTimer.get(xid) == null)
-            mwTimer.get(xid) = new ArrayList<Double>();
-        mwTimer.get(xid).add(System.currentTimeMillis() - s);
-    }
 
     public Middleware(String p_name)
     {
@@ -47,32 +40,13 @@ public class Middleware extends ResourceManager {
     }
 
     public int start() throws RemoteException{
-        long it = System.currentTimeMillis();
         int xid  = tm.start();
         Trace.info("Starting transaction - " + xid);
-        addTimeMW(xid,it);
         return xid;
-    }
-
-    public void printTimes() throws RemoteException {
-        m_flightResourceManager.printTimes();
-
-        m_carResourceManager.printTimes();
-
-        m_roomResourceManager.printTimes();
-
-        printTimes();
-
-        System.out.println();
-        System.out.println();
-        System.out.println();
-
-        System.out.println();
     }
 
     public boolean commit(int xid) throws RemoteException,TransactionAbortedException, InvalidTransactionException
     {
-        long it = System.currentTimeMillis();
         int id = xid;
         System.out.print("Commit transaction:" + xid);
 
@@ -106,7 +80,7 @@ public class Middleware extends ResourceManager {
         }
 
         endTransaction(xid, true);
-        addTimeMW(xid,it);
+
         return true;
     }
 
@@ -170,7 +144,6 @@ public class Middleware extends ResourceManager {
     }
 
     public boolean addFlight(int xid, int flightNum, int flightSeats, int flightPrice) throws RemoteException,TransactionAbortedException, InvalidTransactionException {
-        long it = System.currentTimeMillis();
         int id = xid;
 
         Trace.info("addFlight - Redirect to Flight Resource Manager");
@@ -180,9 +153,7 @@ public class Middleware extends ResourceManager {
         addResourceManagerUsed(id,"Flight");
         try {
             try {
-                boolean r =  m_flightResourceManager.addFlight(id, flightNum, flightSeats, flightPrice);
-                addTimeMW(xid,it);
-                return r;
+                return m_flightResourceManager.addFlight(id, flightNum, flightSeats, flightPrice);
             } catch (ConnectException e) {
                 connectServer("Flight", s_flightServer.host, s_flightServer.port, s_flightServer.name);
                 return m_flightResourceManager.addFlight(id, flightNum, flightSeats, flightPrice);
@@ -190,13 +161,11 @@ public class Middleware extends ResourceManager {
         } catch (Exception e) {
             Trace.error(e.toString());
         }
-        addTimeMW(xid,it);
         return false;
     }
 
     public boolean addCars(int xid, String location, int numCars, int price) throws RemoteException,TransactionAbortedException, InvalidTransactionException
     {
-        long it = System.currentTimeMillis();
         int id = xid;
         Trace.info("addCars - Redirect to Car Resource Manager");
         checkTransaction(id);
@@ -205,9 +174,7 @@ public class Middleware extends ResourceManager {
         addResourceManagerUsed(id,"Car");
         try {
             try {
-                boolean r = m_carResourceManager.addCars(id, location, numCars, price);
-                addTimeMW(xid,it);
-                return r;
+                return m_carResourceManager.addCars(id, location, numCars, price);
             } catch (ConnectException e) {
                 connectServer("Car", s_carServer.host, s_carServer.port, s_carServer.name);
                 return m_carResourceManager.addCars(id, location, numCars, price);
@@ -215,7 +182,6 @@ public class Middleware extends ResourceManager {
         } catch (Exception e) {
             Trace.error(e.toString());
         }
-        addTimeMW(xid,it);
         return false;
 
     }
@@ -230,9 +196,7 @@ public class Middleware extends ResourceManager {
         addResourceManagerUsed(id,"Room");
         try {
             try {
-                boolean r = m_roomResourceManager.addRooms(id, location, numRooms, price);
-                addTimeMW(xid,it);
-                return r;
+                return m_roomResourceManager.addRooms(id, location, numRooms, price);
             } catch (ConnectException e) {
                 connectServer("Room", s_roomServer.host, s_roomServer.port, s_roomServer.name);
                 return m_roomResourceManager.addRooms(id, location, numRooms, price);

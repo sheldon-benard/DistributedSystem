@@ -23,6 +23,7 @@ abstract class ClientTest extends Client implements Runnable{
     public double[] times = new double[50];
     public int clients = 1;
     public double throughput = 1.0;
+    public long startTime = 0;
 
     public ClientTest()
     {
@@ -32,8 +33,6 @@ abstract class ClientTest extends Client implements Runnable{
     public void run() {
 
         int waitTime = (int)((1000 * clients) / throughput);
-
-        long startTime = 5*1000 + System.currentTimeMillis();
         long variation = 30 + 1;
 
         while (System.currentTimeMillis() < startTime){}
@@ -46,7 +45,7 @@ abstract class ClientTest extends Client implements Runnable{
             else
                 v = waitTime + ((int)(variation*Math.random()));
             try {
-                double rt = oneResourceManagerTransaction(i, i, i);
+                double rt = oneResourceManagerTransaction();
                 if (i >= (int)Thread.currentThread().getId()*200 + 100)
                     times[i - ((int)Thread.currentThread().getId()*200 + 100)] = rt;
                 if ((int)(v - rt) < 0)
@@ -57,34 +56,38 @@ abstract class ClientTest extends Client implements Runnable{
 
     }
 
-    private double oneResourceManagerTransaction(int flightNum, int flightSeats, int flightPrice) throws Exception{
+    public void setupEnv() {
+        System.out.println("SETUP");
+        try {
+            int xid = m_resourceManager.start();
+            for (int i = 1; i <= 25; i++) {
+                m_resourceManager.newCustomer(xid, i);
+                m_resourceManager.addFlight(xid, i, 10000, 500 + i);
+                m_resourceManager.addCars(xid, "Montreal" + i, 10000, 100 + i);
+                m_resourceManager.addRooms(xid, "Montreal" + i, 10000, 100 + i);
+            }
+            m_resourceManager.commit(xid);
+        } catch(Exception e){
+            System.out.println("ENV not setup properly");
+            System.exit(-1);
+        }
+        System.out.println("END SETUP");
+    }
+
+
+    private double oneResourceManagerTransaction() throws Exception{
         long startTime = System.currentTimeMillis();
+        int i = (int)(Math.random()*25 + 1);
+        int j = (int)(Math.random()*25 + 1);
+
         int xid = m_resourceManager.start();
-        m_resourceManager.addFlight(xid, flightNum, flightSeats, flightPrice);
-        m_resourceManager.queryFlight(xid, flightNum);
-        m_resourceManager.addFlight(xid, flightNum, flightSeats, flightPrice);
-        m_resourceManager.queryFlightPrice(xid, flightNum);
-        m_resourceManager.addFlight(xid, flightNum, flightSeats, flightPrice);
-        m_resourceManager.deleteFlight(xid, flightNum);
+        m_resourceManager.queryFlight(xid, i);
+        m_resourceManager.queryFlightPrice(xid, i);
+        m_resourceManager.reserveFlight(xid, j, i);
         m_resourceManager.commit(xid);
         long responseTime = System.currentTimeMillis() - startTime;
         return responseTime;
     }
-
-    private double allResourceManagerTransaction(int custID, int flightNum, int number, int price, String location) throws Exception {
-        long startTime = System.currentTimeMillis();
-        int xid = m_resourceManager.start();
-        m_resourceManager.addFlight(xid, flightNum, number, price);
-        m_resourceManager.addCars(xid, location, number, price);
-        m_resourceManager.addRooms(xid, location, number, price);
-        m_resourceManager.newCustomer(xid, custID);
-        m_resourceManager.reserveFlight(xid, custID, flightNum);
-        m_resourceManager.reserveCar(xid, custID, location);
-        m_resourceManager.commit(xid);
-        long responseTime = System.currentTimeMillis() - startTime;
-        return responseTime;
-    }
-
 
 }
 
@@ -123,7 +126,7 @@ public class RMIClientTest extends ClientTest
         {
             System.setSecurityManager(new SecurityManager());
         }
-
+        long startTime = 5*1000 + System.currentTimeMillis();
         // Get a reference to the RMIRegister
         try {
             RMIClientTest[] c = new RMIClientTest[cli];
@@ -132,7 +135,10 @@ public class RMIClientTest extends ClientTest
                 c[i] = new RMIClientTest();
                 c[i].clients = cli;
                 c[i].throughput = tp;
+                c[i].startTime = startTime;
                 c[i].connectServer();
+                if (i == 0)
+                    c[i].setupEnv();
                 thread[i] = new Thread(c[i]);
                 thread[i].start();
             }
@@ -140,9 +146,9 @@ public class RMIClientTest extends ClientTest
             for (int i = 0; i < cli; i++) {
                 thread[i].join();
             }
-
             for (int i = 0; i < cli; i++) {
                 System.out.println(Arrays.toString(c[i].times));
+                System.out.println();
             }
         }
         catch (Exception e) {

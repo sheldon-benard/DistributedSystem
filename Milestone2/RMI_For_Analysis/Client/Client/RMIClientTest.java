@@ -36,20 +36,21 @@ abstract class ClientTest extends Client implements Runnable{
         long startTime = 5*1000 + System.currentTimeMillis();
         long variation = 30 + 1;
 
-        double l = Math.random();
-        int v;
-        if (l < 0.5)
-            v = waitTime - ((int)(variation*Math.random()));
-        else
-            v = waitTime + ((int)(variation*Math.random()));
-
         while (System.currentTimeMillis() < startTime){}
 
-        for (int i = 0; i < 150; i++) {
+        for (int i = (int)Thread.currentThread().getId()*200; i < (int)Thread.currentThread().getId()*200 + 150; i++) {
+            double l = Math.random();
+            int v;
+            if (l < 0.5)
+                v = waitTime - ((int)(variation*Math.random()));
+            else
+                v = waitTime + ((int)(variation*Math.random()));
             try {
                 double rt = oneResourceManagerTransaction(i, i, i);
-                if (i >= 100)
-                    times[i - 100] = rt;
+                if (i >= (int)Thread.currentThread().getId()*200 + 100)
+                    times[i - ((int)Thread.currentThread().getId()*200 + 100)] = rt;
+                if ((int)(v - rt) < 0)
+                    continue;
                 Thread.sleep((int) (v - rt));
             } catch(Exception e){}
         }
@@ -65,6 +66,7 @@ abstract class ClientTest extends Client implements Runnable{
         m_resourceManager.queryFlightPrice(xid, flightNum);
         m_resourceManager.addFlight(xid, flightNum, flightSeats, flightPrice);
         m_resourceManager.deleteFlight(xid, flightNum);
+        m_resourceManager.commit(xid);
         long responseTime = System.currentTimeMillis() - startTime;
         return responseTime;
     }
@@ -78,6 +80,7 @@ abstract class ClientTest extends Client implements Runnable{
         m_resourceManager.newCustomer(xid, custID);
         m_resourceManager.reserveFlight(xid, custID, flightNum);
         m_resourceManager.reserveCar(xid, custID, location);
+        m_resourceManager.commit(xid);
         long responseTime = System.currentTimeMillis() - startTime;
         return responseTime;
     }
@@ -90,8 +93,8 @@ public class RMIClientTest extends ClientTest
     private static String s_serverHost = "localhost";
     private static int s_serverPort = 1099;
     private static String s_serverName = "Middleware";
-    private static int clients = 1;
-    private static double throughput = 1.0;
+    private static int cli = 1;
+    private static double tp = 1.0;
 
     private static String s_rmiPrefix = "group7";
 
@@ -99,8 +102,8 @@ public class RMIClientTest extends ClientTest
     {
         if (args.length > 0)
         {
-            clients = Integer.parseInt(args[0]);
-            throughput = Double.parseDouble(args[1]);
+            cli = Integer.parseInt(args[0]);
+            tp = Double.parseDouble(args[1]);
         }
         if (args.length > 2)
         {
@@ -123,19 +126,22 @@ public class RMIClientTest extends ClientTest
 
         // Get a reference to the RMIRegister
         try {
-            RMIClientTest[] c = new RMIClientTest[clients];
-            Thread[] thread = new Thread[clients];
-            for (int i = 0; i < clients; i++) {
+            RMIClientTest[] c = new RMIClientTest[cli];
+            Thread[] thread = new Thread[cli];
+            for (int i = 0; i < cli; i++) {
                 c[i] = new RMIClientTest();
-                c[i].clients = clients;
-                c[i].throughput = throughput;
+                c[i].clients = cli;
+                c[i].throughput = tp;
                 c[i].connectServer();
                 thread[i] = new Thread(c[i]);
                 thread[i].start();
             }
 
-            for (int i = 0; i < clients; i++) {
+            for (int i = 0; i < cli; i++) {
                 thread[i].join();
+            }
+
+            for (int i = 0; i < cli; i++) {
                 System.out.println(Arrays.toString(c[i].times));
             }
         }

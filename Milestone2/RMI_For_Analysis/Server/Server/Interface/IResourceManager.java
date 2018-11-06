@@ -26,14 +26,14 @@ public interface IResourceManager extends Remote
      * Start new transaction
      * @return new xid
      */
-    public int start()
+    public long[] start()
             throws RemoteException;
 
     /**
      * Commit transaction
      * @return Success
      */
-    public boolean commit(int xid)
+    public long[] commit(int xid)
             throws RemoteException,TransactionAbortedException, InvalidTransactionException;
 
     /**
@@ -160,7 +160,7 @@ public interface IResourceManager extends Remote
      *
      * @return Number of empty seats
      */
-    public int queryFlight(int id, int flightNumber) 
+    public long[] queryFlight(int id, int flightNumber)
 	throws RemoteException,TransactionAbortedException, InvalidTransactionException;
 
     /**
@@ -192,7 +192,7 @@ public interface IResourceManager extends Remote
      *
      * @return Price of a seat in this flight
      */
-    public int queryFlightPrice(int id, int flightNumber) 
+    public long[] queryFlightPrice(int id, int flightNumber)
 	throws RemoteException,TransactionAbortedException, InvalidTransactionException;
 
     /**
@@ -216,7 +216,7 @@ public interface IResourceManager extends Remote
      *
      * @return Success
      */
-    public boolean reserveFlight(int id, int customerID, int flightNumber) 
+    public long[] reserveFlight(int id, int customerID, int flightNumber)
 	throws RemoteException,TransactionAbortedException, InvalidTransactionException;
 
     /**
@@ -224,7 +224,7 @@ public interface IResourceManager extends Remote
      *
      * @return Success
      */
-    public boolean reserveCar(int id, int customerID, String location) 
+    public long[] reserveCar(int id, int customerID, String location)
 	throws RemoteException,TransactionAbortedException, InvalidTransactionException;
 
         /**
@@ -232,7 +232,7 @@ public interface IResourceManager extends Remote
      *
      * @return Success
      */
-    public boolean reserveRoom(int id, int customerID, String location)
+    public long[] reserveRoom(int id, int customerID, String location)
             throws RemoteException,TransactionAbortedException, InvalidTransactionException;
 
     /**

@@ -17,6 +17,7 @@ public class ResourceManager implements IResourceManager
 	protected String m_name = "";
 	protected RMHashMap m_data = new RMHashMap();
 	protected TransactionManager tm;
+	protected HashMap<Integer, Long> DB = new HashMap<Integer, Long>();
 
 	public ResourceManager(String p_name)
 	{
@@ -48,6 +49,7 @@ public class ResourceManager implements IResourceManager
 
 		if (!t.hasData(key)) {
 			synchronized (m_data) {
+				long ta = curr();
 				RMItem item = m_data.get(key);
 				if (item != null) {
 					t.writeData(xid, key, (RMItem) item.clone());
@@ -55,6 +57,7 @@ public class ResourceManager implements IResourceManager
 				else {
 					t.writeData(xid, key, null);
 				}
+				DB.put(xid, curr() - ta);
 			}
 		}
 
@@ -172,6 +175,9 @@ public class ResourceManager implements IResourceManager
 		return item.getPrice();
 	}
 
+	public long curr() {
+		return System.currentTimeMillis();
+	}
 
 	// Create a new flight, or add seats to existing flight
 	// NOTE: if flightPrice <= 0 and the flight already exists, it maintains its current price
@@ -271,9 +277,15 @@ public class ResourceManager implements IResourceManager
 	}
 
 	// Returns the number of empty seats in this flight
-	public int queryFlight(int xid, int flightNum) throws RemoteException,TransactionAbortedException, InvalidTransactionException
+	public long[] queryFlight(int xid, int flightNum) throws RemoteException,TransactionAbortedException, InvalidTransactionException
 	{
-		return queryNum(xid, Flight.getKey(flightNum));
+		long x = 0;
+		DB.put(xid, x);
+		long t = curr();
+		queryNum(xid, Flight.getKey(flightNum));
+
+		return new long[] {curr() - t, DB.get(xid)};
+
 	}
 
 	// Returns the number of cars available at a location
@@ -289,9 +301,14 @@ public class ResourceManager implements IResourceManager
 	}
 
 	// Returns price of a seat in this flight
-	public int queryFlightPrice(int xid, int flightNum) throws RemoteException,TransactionAbortedException, InvalidTransactionException
+	public long[] queryFlightPrice(int xid, int flightNum) throws RemoteException,TransactionAbortedException, InvalidTransactionException
 	{
-		return queryPrice(xid, Flight.getKey(flightNum));
+		long x = 0;
+		DB.put(xid, x);
+		long t = curr();
+		queryPrice(xid, Flight.getKey(flightNum));
+
+		return new long[] {curr() - t, DB.get(xid)};
 	}
 
 	// Returns price of cars at this location
@@ -371,21 +388,36 @@ public class ResourceManager implements IResourceManager
 	}
 
 	// Adds flight reservation to this customer
-	public boolean reserveFlight(int xid, int customerID, int flightNum) throws RemoteException,TransactionAbortedException, InvalidTransactionException
+	public long[] reserveFlight(int xid, int customerID, int flightNum) throws RemoteException,TransactionAbortedException, InvalidTransactionException
 	{
-		return reserveItem(xid, customerID, Flight.getKey(flightNum), String.valueOf(flightNum));
+		long x = 0;
+		DB.put(xid, x);
+		long t = curr();
+		reserveItem(xid, customerID, Flight.getKey(flightNum), String.valueOf(flightNum));
+
+		return new long[] {curr() - t, DB.get(xid)};
 	}
 
 	// Adds car reservation to this customer
-	public boolean reserveCar(int xid, int customerID, String location) throws RemoteException,TransactionAbortedException, InvalidTransactionException
+	public long[] reserveCar(int xid, int customerID, String location) throws RemoteException,TransactionAbortedException, InvalidTransactionException
 	{
-		return reserveItem(xid, customerID, Car.getKey(location), location);
+		long x = 0;
+		DB.put(xid, x);
+		long t = curr();
+		reserveItem(xid, customerID, Car.getKey(location), location);
+
+		return new long[] {curr() - t, DB.get(xid)};
 	}
 
 	// Adds room reservation to this customer
-	public boolean reserveRoom(int xid, int customerID, String location) throws RemoteException,TransactionAbortedException, InvalidTransactionException
+	public long[] reserveRoom(int xid, int customerID, String location) throws RemoteException,TransactionAbortedException, InvalidTransactionException
 	{
-		return reserveItem(xid, customerID, Room.getKey(location), location);
+		long x = 0;
+		DB.put(xid, x);
+		long t = curr();
+		reserveItem(xid, customerID, Room.getKey(location), location);
+
+		return new long[] {curr() - t, DB.get(xid)};
 	}
 
 	// Reserve bundle 
@@ -437,12 +469,16 @@ public class ResourceManager implements IResourceManager
 		return true;
 	}
 
-	public int start() throws RemoteException {
-		return -1;
+	public long[] start() throws RemoteException {
+		return null;
 	}
 
-	public boolean commit(int xid) throws RemoteException,TransactionAbortedException, InvalidTransactionException
+	public long[] commit(int xid) throws RemoteException,TransactionAbortedException, InvalidTransactionException
 	{
+		long x = 0;
+		DB.put(xid, x);
+		long ta = curr();
+
 		System.out.println("Commit transaction:" + xid);
 		//flush transaction to m_data
 		if(!tm.xidActive(xid))
@@ -451,6 +487,7 @@ public class ResourceManager implements IResourceManager
 		Transaction t = tm.readActiveData(xid);
 		RMHashMap m = t.getData();
 
+		long t2 = curr();
 		synchronized (m_data) {
 			Set<String> keyset = m.keySet();
 			for (String key : keyset) {
@@ -458,12 +495,13 @@ public class ResourceManager implements IResourceManager
 				m_data.put(key, m.get(key));
 			}
 		}
+		long t3 = curr();
 
 		// Move to inactive transactions
 		tm.writeActiveData(xid, null);
 		tm.writeInactiveData(xid, new Boolean(true));
 
-		return true;
+		return new long[] {curr() - ta, t3 - t2};
 	}
 
 	public void abort(int xid) throws RemoteException, InvalidTransactionException {

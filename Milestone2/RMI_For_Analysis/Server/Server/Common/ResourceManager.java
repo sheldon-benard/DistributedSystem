@@ -399,15 +399,25 @@ public class ResourceManager implements IResourceManager
 	}
 
 	// Adds car reservation to this customer
-	public boolean reserveCar(int xid, int customerID, String location) throws RemoteException,TransactionAbortedException, InvalidTransactionException
+	public long[] reserveCar(int xid, int customerID, String location) throws RemoteException,TransactionAbortedException, InvalidTransactionException
 	{
-		return reserveItem(xid, customerID, Car.getKey(location), location);
+		long x = 0;
+		DB.put(xid, x);
+		long t = curr();
+		reserveItem(xid, customerID, Car.getKey(location), location);
+
+		return new long[] {curr() - t, DB.get(xid)};
 	}
 
 	// Adds room reservation to this customer
-	public boolean reserveRoom(int xid, int customerID, String location) throws RemoteException,TransactionAbortedException, InvalidTransactionException
+	public long[] reserveRoom(int xid, int customerID, String location) throws RemoteException,TransactionAbortedException, InvalidTransactionException
 	{
-		return reserveItem(xid, customerID, Room.getKey(location), location);
+		long x = 0;
+		DB.put(xid, x);
+		long t = curr();
+		reserveItem(xid, customerID, Room.getKey(location), location);
+
+		return new long[] {curr() - t, DB.get(xid)};
 	}
 
 	// Reserve bundle 

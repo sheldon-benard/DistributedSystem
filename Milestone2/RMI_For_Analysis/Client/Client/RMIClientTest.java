@@ -94,6 +94,21 @@ abstract class ClientTest extends Client implements Runnable{
         return new long[] {responseTime, x[1] + a[0] + b[0] + c[0] + d[0], a[1] + b[1] + c[1] + d[1], a[2] + b[2] + c[2] + d[2]};
     }
 
+    private long[] manyResourceManagerTransaction() throws Exception{
+        long startTime = System.currentTimeMillis();
+        int i = (int)(Math.random()*100 + 1);
+        int j = (int)(Math.random()*500 + 1);
+
+        long[] x = m_resourceManager.start();
+        int xid = (int)x[0];
+        long[] a = m_resourceManager.reserveFlight(xid, j, i);
+        long[] b = m_resourceManager.reserveCar(xid, j, "Montreal" + i);
+        long[] c = m_resourceManager.reserveRoom(xid, j, "Montreal" + i);
+        long[] d = m_resourceManager.commit(xid);
+        long responseTime = System.currentTimeMillis() - startTime;
+        return new long[] {responseTime, x[1] + a[0] + b[0] + c[0] + d[0], a[1] + b[1] + c[1] + d[1], a[2] + b[2] + c[2] + d[2]};
+    }
+
 }
 
 public class RMIClientTest extends ClientTest

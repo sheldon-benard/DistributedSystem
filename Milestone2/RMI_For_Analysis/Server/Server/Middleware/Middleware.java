@@ -576,8 +576,9 @@ public class Middleware extends ResourceManager {
 
     }
 
-    public boolean reserveCar(int xid, int customerID, String location) throws RemoteException,TransactionAbortedException, InvalidTransactionException
+    public long[] reserveCar(int xid, int customerID, String location) throws RemoteException,TransactionAbortedException, InvalidTransactionException
     {
+        long t = curr();
         int id = xid;
         String key = Car.getKey(location);
 
@@ -591,32 +592,33 @@ public class Middleware extends ResourceManager {
         if (customer == null)
         {
             Trace.warn("RM::reserveItem(" + xid + ", " + customerID + ", " + location + ")  failed--customer doesn't exist");
-            return false;
+            return null;
         }
 
         acquireLock(xid, key, TransactionLockObject.LockType.LOCK_READ);
         addResourceManagerUsed(id,"Car");
-        int price = m_carResourceManager.itemsAvailable(xid, key, 1);
-
-        if (price < 0) {
-            Trace.warn("RM::reserveItem(" + xid + ", " + customerID + ", " + location + ")  failed--item unavailable");
-            return false;
-        }
+//        int price = m_carResourceManager.itemsAvailable(xid, key, 1);
+//
+//        if (price < 0) {
+//            Trace.warn("RM::reserveItem(" + xid + ", " + customerID + ", " + location + ")  failed--item unavailable");
+//            return false;
+//        }
 
         acquireLock(xid, key, TransactionLockObject.LockType.LOCK_WRITE);
-        if (m_carResourceManager.reserveCar(xid, customerID, location)) {
-            acquireLock(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_WRITE);
-            customer.reserve(key, location, price);
-            writeData(xid, customer.getKey(), customer);
-            return true;
-        }
-        Trace.warn("RM::reserveItem(" + xid + ", " + customerID + ", " + location + ")  failed--Could not reserve item");
-        return false;
 
+        long ta = curr();
+        long[] a = m_carResourceManager.reserveCar(xid, customerID, location);
+        long ta2 = curr() - ta;
+
+        acquireLock(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_WRITE);
+        customer.reserve(key, location, 600);
+        writeData(xid, customer.getKey(), customer);
+        return new long[] {curr() - t - ta2, a[0], a[1]};
     }
 
-    public boolean reserveRoom(int xid, int customerID, String location) throws RemoteException,TransactionAbortedException, InvalidTransactionException
+    public long[] reserveRoom(int xid, int customerID, String location) throws RemoteException,TransactionAbortedException, InvalidTransactionException
     {
+        long t = curr();
         int id = xid;
         String key = Room.getKey(location);
 
@@ -630,27 +632,28 @@ public class Middleware extends ResourceManager {
         if (customer == null)
         {
             Trace.warn("RM::reserveItem(" + xid + ", " + customerID + ", " + location + ")  failed--customer doesn't exist");
-            return false;
+            return null;
         }
 
         acquireLock(xid, key, TransactionLockObject.LockType.LOCK_READ);
         addResourceManagerUsed(id,"Room");
-        int price = m_roomResourceManager.itemsAvailable(xid, key, 1);
-
-        if (price < 0) {
-            Trace.warn("RM::reserveItem(" + xid + ", " + customerID + ", " + location + ")  failed--item unavailable");
-            return false;
-        }
+//        int price = m_roomResourceManager.itemsAvailable(xid, key, 1);
+//
+//        if (price < 0) {
+//            Trace.warn("RM::reserveItem(" + xid + ", " + customerID + ", " + location + ")  failed--item unavailable");
+//            return false;
+//        }
 
         acquireLock(xid, key, TransactionLockObject.LockType.LOCK_WRITE);
-        if (m_roomResourceManager.reserveRoom(xid, customerID, location)) {
-            acquireLock(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_WRITE);
-            customer.reserve(key, location, price);
-            writeData(xid, customer.getKey(), customer);
-            return true;
-        }
-        Trace.warn("RM::reserveItem(" + xid + ", " + customerID + ", " + location + ")  failed--Could not reserve item");
-        return false;
+
+        long ta = curr();
+        long[] a = m_roomResourceManager.reserveRoom(xid, customerID, location);
+        long ta2 = curr() - ta;
+        acquireLock(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_WRITE);
+        customer.reserve(key, location, 700);
+        writeData(xid, customer.getKey(), customer);
+
+        return new long[] {curr() - t - ta2, a[0], a[1]};
     }
 
     public boolean bundle(int xid, int customerID, Vector<String> flightNumbers, String location, boolean car, boolean room) throws RemoteException,TransactionAbortedException, InvalidTransactionException

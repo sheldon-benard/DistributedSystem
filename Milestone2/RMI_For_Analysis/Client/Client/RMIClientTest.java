@@ -59,7 +59,9 @@ abstract class ClientTest extends Client implements Runnable{
     public void setupEnv() {
         System.out.println("SETUP");
         try {
-            int xid = (int)m_resourceManager.start()[0];
+            long[] x = m_resourceManager.start();
+            System.out.println(x[0] + "-" + x[1]);
+            int xid = (int)x[0];
             for (int i = 1; i <= 100; i++) {
                 m_resourceManager.addFlight(xid, i, 10000, 500 + i);
                 m_resourceManager.addCars(xid, "Montreal" + i, 10000, 100 + i);
@@ -70,7 +72,7 @@ abstract class ClientTest extends Client implements Runnable{
             }
             m_resourceManager.commit(xid);
         } catch(Exception e){
-            System.out.println("ENV not setup properly");
+            System.out.println(e.toString());
             System.exit(-1);
         }
         System.out.println("END SETUP");
@@ -149,8 +151,16 @@ public class RMIClientTest extends ClientTest
             for (int i = 0; i < cli; i++) {
                 thread[i].join();
             }
+            System.out.println("DATA\n\n");
             for (int i = 0; i < cli; i++) {
-                System.out.println(Arrays.toString(c[i].times));
+                for (int j = 0; j < c[i].times.length; j++) {
+                    for (int k = 0; k < c[i].times[j].length; k++) {
+                        System.out.print(c[i].times[j][k]);
+                        if (k != c[i].times[j].length - 1)
+                            System.out.print(",");
+                    }
+                    System.out.println();
+                }
                 System.out.println();
             }
         }

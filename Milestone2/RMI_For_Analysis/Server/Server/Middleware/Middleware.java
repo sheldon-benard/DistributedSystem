@@ -43,12 +43,14 @@ public class Middleware extends ResourceManager {
         long t = curr();
         int xid  = tm.start();
         Trace.info("Starting transaction - " + xid);
-        return new long[] {xid, curr() - t};
+        long id = xid;
+        return new long[] {id, curr() - t};
     }
 
     public long[] commit(int xid) throws RemoteException,TransactionAbortedException, InvalidTransactionException
     {
         long ta = curr();
+        long tb = 0, tb2 = 0, tc = 0, tc2 = 0, td = 0, td2 = 0;
         int id = xid;
         System.out.print("Commit transaction:" + xid);
 
@@ -60,14 +62,23 @@ public class Middleware extends ResourceManager {
         Trace.info("Resource=" + resources);
         long[] a = null,b = null,c = null;
 
-        if (resources.contains("Flight"))
+        if (resources.contains("Flight")) {
+            tb = curr();
             a = m_flightResourceManager.commit(xid);
+            tb2 = curr() - tb;
+        }
 
-        if (resources.contains("Car"))
+        if (resources.contains("Car")) {
+            tc = curr();
             b = m_carResourceManager.commit(xid);
+            tc2 = curr() - tc;
+        }
 
-        if (resources.contains("Room"))
+        if (resources.contains("Room")) {
+            td = curr();
             c = m_roomResourceManager.commit(xid);
+            td2 = curr() - td;
+        }
 
         long[] r = new long[] {0,0};
         if (a != null) {
@@ -98,7 +109,13 @@ public class Middleware extends ResourceManager {
 
         endTransaction(xid, true);
 
-        return new long[] {curr() - ta, r[0], r[1]};
+        long finalTime = curr() - ta;
+        System.out.print("\n\n TIME=" + finalTime + "\n\n");
+        if (tb2 > 0) finalTime -= tb2;
+        if (tc2 > 0) finalTime -= tc2;
+        if (td2 > 0) finalTime -= td2;
+        System.out.print("\n\n minus=" + tb2 + " TIME=" + finalTime + "\n\n");
+        return new long[] {finalTime, r[0], r[1]};
     }
 
     public void abort(int xid) throws RemoteException, InvalidTransactionException {
@@ -399,8 +416,10 @@ public class Middleware extends ResourceManager {
         addResourceManagerUsed(id,"Flight");
         try {
             try {
+                long ta = curr();
                 long[] a = m_flightResourceManager.queryFlight(id, flightNumber);
-                return new long[] {curr() - t, a[0], a[1]};
+                long ta2 = curr() - ta;
+                return new long[] {curr() - t - ta2, a[0], a[1]};
             } catch (ConnectException e) {
                 return null;
             }
@@ -463,8 +482,10 @@ public class Middleware extends ResourceManager {
         addResourceManagerUsed(id,"Flight");
         try {
             try {
+                long ta = curr();
                 long[] a = m_flightResourceManager.queryFlightPrice(id, flightNumber);
-                return new long[] {curr() - t, a[0], a[1]};
+                long ta2 = curr() - ta;
+                return new long[] {curr() - t - ta2, a[0], a[1]};
             } catch (ConnectException e) {
                 return null;
             }
@@ -544,11 +565,14 @@ public class Middleware extends ResourceManager {
 //            return false;
 //        }
         acquireLock(xid, key, TransactionLockObject.LockType.LOCK_WRITE);
+        long ta = curr();
         long[] a = m_flightResourceManager.reserveFlight(xid, customerID, flightNumber);
+        long ta2 = curr() - ta;
         acquireLock(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_WRITE);
         customer.reserve(key, String.valueOf(flightNumber), 500);
         writeData(xid, customer.getKey(), customer);
-        return new long[] {curr() - t, a[0], a[1]};
+
+        return new long[] {curr() - t - ta2, a[0], a[1]};
 
     }
 

@@ -20,7 +20,7 @@ abstract class ClientTest extends Client implements Runnable{
 
     public static final String ANSI_RESET = "\u001B[0m";
     public static final String ANSI_YELLOW = "\u001B[33m";
-    public double[] times = new double[50];
+    public long[][] times = new long[50][4];
     public int clients = 1;
     public double throughput = 1.0;
     public long startTime = 0;
@@ -45,12 +45,12 @@ abstract class ClientTest extends Client implements Runnable{
             else
                 v = waitTime + ((int)(variation*Math.random()));
             try {
-                double rt = oneResourceManagerTransaction();
+                long[] rt = oneResourceManagerTransaction();
                 if (i >= (int)Thread.currentThread().getId()*200 + 100)
                     times[i - ((int)Thread.currentThread().getId()*200 + 100)] = rt;
-                if ((int)(v - rt) < 0)
+                if ((int)(v - rt[0]) < 0)
                     continue;
-                Thread.sleep((int) (v - rt));
+                Thread.sleep((int) (v - rt[0]));
             } catch(Exception e){}
         }
 
@@ -59,12 +59,14 @@ abstract class ClientTest extends Client implements Runnable{
     public void setupEnv() {
         System.out.println("SETUP");
         try {
-            int xid = m_resourceManager.start();
-            for (int i = 1; i <= 25; i++) {
-                m_resourceManager.newCustomer(xid, i);
+            int xid = (int)m_resourceManager.start()[0];
+            for (int i = 1; i <= 100; i++) {
                 m_resourceManager.addFlight(xid, i, 10000, 500 + i);
                 m_resourceManager.addCars(xid, "Montreal" + i, 10000, 100 + i);
                 m_resourceManager.addRooms(xid, "Montreal" + i, 10000, 100 + i);
+            }
+            for (int i = 1; i <= 500; i++) {
+                m_resourceManager.newCustomer(xid, i);
             }
             m_resourceManager.commit(xid);
         } catch(Exception e){
@@ -75,18 +77,19 @@ abstract class ClientTest extends Client implements Runnable{
     }
 
 
-    private double oneResourceManagerTransaction() throws Exception{
+    private long[] oneResourceManagerTransaction() throws Exception{
         long startTime = System.currentTimeMillis();
-        int i = (int)(Math.random()*25 + 1);
-        int j = (int)(Math.random()*25 + 1);
+        int i = (int)(Math.random()*100 + 1);
+        int j = (int)(Math.random()*500 + 1);
 
-        int xid = m_resourceManager.start();
-        m_resourceManager.queryFlight(xid, i);
-        m_resourceManager.queryFlightPrice(xid, i);
-        m_resourceManager.reserveFlight(xid, j, i);
-        m_resourceManager.commit(xid);
+        long[] x = m_resourceManager.start();
+        int xid = (int)x[0];
+        long[] a = m_resourceManager.queryFlight(xid, i);
+        long[] b = m_resourceManager.queryFlightPrice(xid, i);
+        long[] c = m_resourceManager.reserveFlight(xid, j, i);
+        long[] d = m_resourceManager.commit(xid);
         long responseTime = System.currentTimeMillis() - startTime;
-        return responseTime;
+        return new long[] {responseTime, x[1] + a[0] + b[0] + c[0] + d[0], a[1] + b[1] + c[1] + d[1], a[2] + b[2] + c[2] + d[2]};
     }
 
 }

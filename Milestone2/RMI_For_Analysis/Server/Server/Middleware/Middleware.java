@@ -39,14 +39,16 @@ public class Middleware extends ResourceManager {
         lm = new LockManager();
     }
 
-    public int start() throws RemoteException{
+    public long[] start() throws RemoteException{
+        long t = curr();
         int xid  = tm.start();
         Trace.info("Starting transaction - " + xid);
-        return xid;
+        return new long[] {xid, curr() - t};
     }
 
-    public boolean commit(int xid) throws RemoteException,TransactionAbortedException, InvalidTransactionException
+    public long[] commit(int xid) throws RemoteException,TransactionAbortedException, InvalidTransactionException
     {
+        long ta = curr();
         int id = xid;
         System.out.print("Commit transaction:" + xid);
 
@@ -56,15 +58,30 @@ public class Middleware extends ResourceManager {
         Set<String> resources = t.getResourceManagers();
 
         Trace.info("Resource=" + resources);
+        long[] a = null,b = null,c = null;
 
         if (resources.contains("Flight"))
-            m_flightResourceManager.commit(xid);
+            a = m_flightResourceManager.commit(xid);
 
         if (resources.contains("Car"))
-            m_carResourceManager.commit(xid);
+            b = m_carResourceManager.commit(xid);
 
         if (resources.contains("Room"))
-            m_roomResourceManager.commit(xid);
+            c = m_roomResourceManager.commit(xid);
+
+        long[] r = new long[] {0,0};
+        if (a != null) {
+            r[0] = r[0] + a[0];
+            r[1] = r[1] + a[1];
+        }
+        if (b != null) {
+            r[0] = r[0] + b[0];
+            r[1] = r[1] + b[1];
+        }
+        if (c != null) {
+            r[0] = r[0] + c[0];
+            r[1] = r[1] + c[1];
+        }
 
         if (resources.contains("Customer")) {
 
@@ -81,7 +98,7 @@ public class Middleware extends ResourceManager {
 
         endTransaction(xid, true);
 
-        return true;
+        return new long[] {curr() - ta, r[0], r[1]};
     }
 
     public void abort(int xid) throws RemoteException, InvalidTransactionException {
@@ -371,8 +388,9 @@ public class Middleware extends ResourceManager {
 
     }
 
-    public int queryFlight(int xid, int flightNumber) throws RemoteException,TransactionAbortedException, InvalidTransactionException
+    public long[] queryFlight(int xid, int flightNumber) throws RemoteException,TransactionAbortedException, InvalidTransactionException
     {
+        long t = curr();
         int id = xid;
         Trace.info("queryFlight - Redirect to Flight Resource Manager");
         checkTransaction(id);
@@ -381,14 +399,14 @@ public class Middleware extends ResourceManager {
         addResourceManagerUsed(id,"Flight");
         try {
             try {
-                return m_flightResourceManager.queryFlight(id, flightNumber);
+                long[] a = m_flightResourceManager.queryFlight(id, flightNumber);
+                return new long[] {curr() - t, a[0], a[1]};
             } catch (ConnectException e) {
-                connectServer("Flight", s_flightServer.host, s_flightServer.port, s_flightServer.name);
-                return m_flightResourceManager.queryFlight(id, flightNumber);
+                return null;
             }
         } catch (Exception e) {
             Trace.error(e.toString());
-            return -1;
+            return null;
         }
     }
 
@@ -434,8 +452,9 @@ public class Middleware extends ResourceManager {
         }
     }
 
-    public int queryFlightPrice(int xid, int flightNumber) throws RemoteException,TransactionAbortedException, InvalidTransactionException
+    public long[] queryFlightPrice(int xid, int flightNumber) throws RemoteException,TransactionAbortedException, InvalidTransactionException
     {
+        long t = curr();
         int id = xid;
         Trace.info("queryFlightPrice - Redirect to Flight Resource Manager");
         checkTransaction(id);
@@ -444,14 +463,14 @@ public class Middleware extends ResourceManager {
         addResourceManagerUsed(id,"Flight");
         try {
             try {
-                return m_flightResourceManager.queryFlightPrice(id, flightNumber);
+                long[] a = m_flightResourceManager.queryFlightPrice(id, flightNumber);
+                return new long[] {curr() - t, a[0], a[1]};
             } catch (ConnectException e) {
-                connectServer("Flight", s_flightServer.host, s_flightServer.port, s_flightServer.name);
-                return m_flightResourceManager.queryFlightPrice(id, flightNumber);
+                return null;
             }
         } catch (Exception e) {
             Trace.error(e.toString());
-            return -1;
+            return null;
         }
     }
 
@@ -497,8 +516,9 @@ public class Middleware extends ResourceManager {
         }
     }
 
-    public boolean reserveFlight(int xid, int customerID, int flightNumber) throws RemoteException,TransactionAbortedException, InvalidTransactionException
+    public long[] reserveFlight(int xid, int customerID, int flightNumber) throws RemoteException,TransactionAbortedException, InvalidTransactionException
     {
+        long t = curr();
         int id = xid;
         String key = Flight.getKey(flightNumber);
 
@@ -512,26 +532,23 @@ public class Middleware extends ResourceManager {
         if (customer == null)
         {
             Trace.warn("RM::reserveItem(" + xid + ", " + customerID + ", " + flightNumber + ")  failed--customer doesn't exist");
-            return false;
+            return null;
         }
 
         acquireLock(xid, key, TransactionLockObject.LockType.LOCK_READ);
         addResourceManagerUsed(xid,"Flight");
-        int price = m_flightResourceManager.itemsAvailable(xid, key, 1);
-
-        if (price < 0) {
-            Trace.warn("RM::reserveItem(" + xid + ", " + customerID + ", " + flightNumber + ")  failed--item unavailable");
-            return false;
-        }
+//        int price = m_flightResourceManager.itemsAvailable(xid, key, 1);
+//
+//        if (price < 0) {
+//            Trace.warn("RM::reserveItem(" + xid + ", " + customerID + ", " + flightNumber + ")  failed--item unavailable");
+//            return false;
+//        }
         acquireLock(xid, key, TransactionLockObject.LockType.LOCK_WRITE);
-        if (m_flightResourceManager.reserveFlight(xid, customerID, flightNumber)) {
-            acquireLock(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_WRITE);
-            customer.reserve(key, String.valueOf(flightNumber), price);
-            writeData(xid, customer.getKey(), customer);
-            return true;
-        }
-        Trace.warn("RM::reserveItem(" + xid + ", " + customerID + ", " + flightNumber + ")  failed--Could not reserve item");
-        return false;
+        long[] a = m_flightResourceManager.reserveFlight(xid, customerID, flightNumber);
+        acquireLock(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_WRITE);
+        customer.reserve(key, String.valueOf(flightNumber), 500);
+        writeData(xid, customer.getKey(), customer);
+        return new long[] {curr() - t, a[0], a[1]};
 
     }
 

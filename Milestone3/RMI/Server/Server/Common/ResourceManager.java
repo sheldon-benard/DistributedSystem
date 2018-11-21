@@ -17,11 +17,13 @@ public class ResourceManager implements IResourceManager
 	protected String m_name = "";
 	protected RMHashMap m_data = new RMHashMap();
 	protected TransactionManager tm;
+	protected Logger log = null;
 
 	public ResourceManager(String p_name)
 	{
 		m_name = p_name;
 		tm = new TransactionManager();
+		log = new Logger(m_name, this);
 	}
 
 	protected void setTransactionManager(TransactionManager tm) {

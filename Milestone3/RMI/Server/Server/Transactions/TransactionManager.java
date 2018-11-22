@@ -20,6 +20,10 @@ public class TransactionManager {
         }
     }
 
+    public boolean xidPrepared(int xid) {
+        return readActiveData(xid).getIsPrepared();
+    }
+
     // Reads a data item
     public Transaction readActiveData(int xid)
     {
@@ -27,6 +31,14 @@ public class TransactionManager {
             Transaction t = activeTransactions.get(xid);
             return t;
         }
+    }
+
+    public HashMap<Integer, Transaction> getActiveData(){
+        return activeTransactions;
+    }
+
+    public HashMap<Integer, Boolean> getInactiveData() {
+        return inactiveTransactions;
     }
 
     // Reads a data item

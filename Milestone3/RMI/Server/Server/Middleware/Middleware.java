@@ -33,7 +33,7 @@ public class Middleware extends ResourceManager {
 
     public Middleware(String p_name)
     {
-        super(p_name);
+        super(p_name, false);
         tm = new MiddlewareTM(timetolive, this);
         this.setTransactionManager(tm);
         lm = new LockManager();
@@ -42,6 +42,7 @@ public class Middleware extends ResourceManager {
     public int start() throws RemoteException{
         int xid  = tm.start();
         Trace.info("Starting transaction - " + xid);
+        this.flush_in_progress();
         return xid;
     }
 
@@ -78,9 +79,9 @@ public class Middleware extends ResourceManager {
                 }
             }
         }
-
         endTransaction(xid, true);
-
+        this.flush_committed();
+        this.flush_in_progress();
         return true;
     }
 
@@ -105,8 +106,9 @@ public class Middleware extends ResourceManager {
         if (resources.contains("Room"))
             m_roomResourceManager.abort(xid);
 
-        endTransaction(xid, false);
 
+        endTransaction(xid, false);
+        this.flush_in_progress();
     }
 
     private void endTransaction(int xid, boolean commit) {

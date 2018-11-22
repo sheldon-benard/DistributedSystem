@@ -23,11 +23,21 @@ public class ResourceManager implements IResourceManager
 	{
 		m_name = p_name;
 		tm = new TransactionManager();
-		log = new Logger(m_name, this);
+		log = new Logger(m_name, this, m_data);
+		setTransactionManager(tm);
+	}
+
+	public ResourceManager(String p_name, boolean setTM)
+	{
+		m_name = p_name;
+		log = new Logger(m_name, this, m_data);
+		if (setTM) setTransactionManager(tm);
 	}
 
 	protected void setTransactionManager(TransactionManager tm) {
 		this.tm = tm;
+		log.setTM(tm);
+		log.setupEnv();
 	}
 
 	public void addTransaction(int xid) throws RemoteException {
@@ -46,6 +56,9 @@ public class ResourceManager implements IResourceManager
 		if(!tm.xidActive(xid))
 			throw new InvalidTransactionException(xid, "Not a valid transaction");
 
+		if(tm.xidPrepared(xid))
+			throw new InvalidTransactionException(xid, "Transaction has been prepared for 2PC; no further action available");
+
 		Transaction t = tm.readActiveData(xid);
 
 		if (!t.hasData(key)) {
@@ -59,8 +72,9 @@ public class ResourceManager implements IResourceManager
 				}
 			}
 		}
-
-		return t.readData(xid, key);
+		RMItem i = t.readData(xid, key);
+		flush_in_progress();
+		return i;
 
 	}
 
@@ -69,10 +83,12 @@ public class ResourceManager implements IResourceManager
 	{
 		if(!tm.xidActive(xid))
 			throw new InvalidTransactionException(xid, "Not a valid transaction");
+
 		readData(xid, key); // this ensures that the data is copied in the transaction local copy
 
 		Transaction t = tm.readActiveData(xid);
 		t.writeData(xid, key, value);
+		flush_in_progress();
 	}
 
 	// Remove the item out of storage
@@ -460,12 +476,19 @@ public class ResourceManager implements IResourceManager
 				m_data.put(key, m.get(key));
 			}
 		}
-
+		flush_committed();
 		// Move to inactive transactions
 		tm.writeActiveData(xid, null);
 		tm.writeInactiveData(xid, new Boolean(true));
-
+		flush_in_progress();
 		return true;
+	}
+
+	protected void flush_committed() {
+		log.flush_committed();
+	}
+	protected void flush_in_progress() {
+		log.flush_in_progress();
 	}
 
 	public void abort(int xid) throws RemoteException, InvalidTransactionException {
@@ -476,7 +499,7 @@ public class ResourceManager implements IResourceManager
 
 		tm.writeActiveData(xid, null);
 		tm.writeInactiveData(xid, new Boolean(false));
-
+		flush_in_progress();
 	}
 
 	public String getName() throws RemoteException

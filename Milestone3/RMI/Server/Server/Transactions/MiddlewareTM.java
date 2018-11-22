@@ -9,8 +9,20 @@ public class MiddlewareTM extends TransactionManager implements Runnable {
     private Integer startXid = 0;
     private int timetolive;
     private Middleware mw;
+    private boolean getLatestXid = false;
 
     public synchronized int start() {
+        if (!this.getLatestXid) {
+            for (Integer id : getInactiveData().keySet()) {
+                if (id > this.startXid)
+                    this.startXid = id;
+            }
+            for (Integer id : getActiveData().keySet()) {
+                if (id > this.startXid)
+                    this.startXid = id;
+            }
+            this.getLatestXid = true;
+        }
         int xid;
         xid = ++this.startXid;
         this.writeActiveData(xid, new Transaction(xid, this.timetolive));

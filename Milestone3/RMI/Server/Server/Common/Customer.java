@@ -46,6 +46,12 @@ public class Customer extends RMItem
 		m_reservations.put(reservedItem.getKey(), reservedItem);
 	}
 
+	public void reserve(String key, String location, int count, int price)
+	{
+		ReservedItem reservedItem = new ReservedItem(key, location, count, price);
+		m_reservations.put(reservedItem.getKey(), reservedItem);
+	}
+
 	public ReservedItem getReservedItem(String key)
 	{
 		return (ReservedItem)m_reservations.get(key);

@@ -11,6 +11,10 @@ public class Transaction {
     private long lastAction = (new Date()).getTime();
     private Set<String> resourceManagers = new HashSet<String>();
     private int timeToLive; // in milliseconds
+    private boolean isPrepared = false;
+
+    public boolean getIsPrepared() {return this.isPrepared;}
+    public void setIsPrepared(boolean a) {this.isPrepared = a;}
 
     // Time to live in seconds
     public Transaction (int xid, int timeToLive) {
@@ -28,6 +32,8 @@ public class Transaction {
             return true;
         return false;
     }
+
+    public int getTimeToLive() {return timeToLive;}
 
     public void updateLastAction() {
         this.lastAction = (new Date()).getTime();

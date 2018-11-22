@@ -37,6 +37,15 @@ public class Middleware extends ResourceManager {
         tm = new MiddlewareTM(timetolive, this);
         this.setTransactionManager(tm);
         lm = new LockManager();
+        for (String s : this.log.getLocks()) {
+            String[] locks = s.split(",");
+            try {
+                if (locks[2].equals("write"))
+                    acquireLock(Integer.parseInt(locks[0]), locks[1], TransactionLockObject.LockType.LOCK_WRITE);
+                else
+                    acquireLock(Integer.parseInt(locks[0]), locks[1], TransactionLockObject.LockType.LOCK_READ);
+            } catch(Exception e){System.out.println(e.getLocalizedMessage());}
+        }
     }
 
     public int start() throws RemoteException{

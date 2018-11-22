@@ -46,6 +46,45 @@ public class Logger {
         return log;
     }
 
+    public void unlockAll(int xid) {
+        String val = String.valueOf(xid);
+        JSONObject locks = (JSONObject)this.master.get("locks");
+        locks.remove(val);
+        this.master.put("locks",locks);
+        flush_to_file(this.master, this.master_f);
+    }
+
+    public void lock(String xid, String data, String lock_string) {
+        JSONObject locks = (JSONObject)this.master.get("locks");
+        JSONObject lock = (JSONObject)locks.get(xid);
+        if (lock == null) {
+            lock = new JSONObject();
+            lock.put(data,lock_string);
+            locks.put(xid, lock);
+        }
+        else {
+            String lock_type = (lock.get(data) == null) ? lock_string : ((lock.get(data).toString().equals("read")) ? lock_string : "write");
+            lock.put(data, lock_type);
+        }
+        this.master.put("locks", locks);
+        flush_to_file(this.master, this.master_f);
+    }
+
+    public Set<String> getLocks() {
+        JSONObject locks = (JSONObject)this.master.get("locks");
+        Set<String> lock_set = new HashSet<String>();
+        for (Object _xid : locks.keySet()) {
+            String xid = _xid.toString();
+            JSONObject data = (JSONObject)locks.get(xid);
+            for (Object _data_key : data.keySet()) {
+                String data_key = _data_key.toString();
+                String a = xid + "," + data_key + "," + data.get(data_key).toString();
+                lock_set.add(a);
+            }
+        }
+        return lock_set;
+    }
+
     public void setTM(TransactionManager tm){
         this.tm = tm;
     }
@@ -372,6 +411,7 @@ public class Logger {
             }
             else if (file.contains("master.json")) {
                 this.master = new JSONObject();
+                this.master.put("locks", new JSONObject());
                 flush_to_file(o, this.master_f);
             }
             else {

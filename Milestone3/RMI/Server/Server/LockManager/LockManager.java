@@ -90,8 +90,11 @@ public class LockManager
 		catch (RedundantLockRequestException redundantlockrequest) {
 			// Ignore redundant lock requests
 			Trace.info("LM::lock(" + xid + ", " + data + ", " + lockType + ") " + redundantlockrequest.getLocalizedMessage());
-			return true;
+			//return true;
 		} 
+		// Lock
+		String l_type = (lockType == TransactionLockObject.LockType.LOCK_READ) ? "read" : "write";
+		Logger.getLog().lock(String.valueOf(xid), data, l_type);
 
 		return true;
 	}
@@ -193,7 +196,8 @@ public class LockManager
 				} 
 			}
 		} 
-
+		// Unlock from logs
+		Logger.getLog().unlockAll(xid);
 		return true;
 	}
 

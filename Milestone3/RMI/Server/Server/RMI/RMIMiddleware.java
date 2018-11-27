@@ -68,9 +68,12 @@ public class RMIMiddleware extends Middleware {
 
     public void connectServers()
     {
-        connectServer("Flight", s_flightServer.host, s_flightServer.port, s_flightServer.name);
-        connectServer("Car", s_carServer.host, s_carServer.port, s_carServer.name);
-        connectServer("Room", s_roomServer.host, s_roomServer.port, s_roomServer.name);
+        if (!connectServer("Flight", s_flightServer.host, s_flightServer.port, s_flightServer.name))
+            System.out.println("Unable to connect to Flight server during setup");
+        if (!connectServer("Car", s_carServer.host, s_carServer.port, s_carServer.name))
+            System.out.println("Unable to connect to Car server during setup");
+        if (!connectServer("Room", s_roomServer.host, s_roomServer.port, s_roomServer.name))
+            System.out.println("Unable to connect to Room server during setup");
     }
 
     public void createServerEntry() {

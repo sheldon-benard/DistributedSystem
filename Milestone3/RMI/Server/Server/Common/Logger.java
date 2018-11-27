@@ -72,6 +72,8 @@ public class Logger {
 
     public Set<String> getLocks() {
         JSONObject locks = (JSONObject)this.master.get("locks");
+        if (locks == null)
+            return new HashSet<String>();
         Set<String> lock_set = new HashSet<String>();
         for (Object _xid : locks.keySet()) {
             String xid = _xid.toString();
@@ -90,9 +92,71 @@ public class Logger {
     }
 
     public void setupEnv() {
+        if (!initial_setup(this.master_f)) recover_master();
+        if (this.master.get("mode") != null && Integer.parseInt(this.master.get("mode").toString()) == 5){
+            Trace.info("Mode=" + 5 + " abort during recovery");
+            setMode(0);
+            System.exit(1);
+        }
         if (!initial_setup(this.committed_f)) recover_committed();
         if (!initial_setup(this.in_progress_f)) recover_in_progress();
-        if (!initial_setup(this.master_f)) recover_master();
+
+        if (!this.name.equals("Middleware")) {
+            Set<Integer> checked = recover_2pc();
+            recover_Transactions(checked);
+        }
+    }
+
+    public void removePrepared(int xid) {
+        this.master.remove(xid);
+        flush_to_file(this.master, this.master_f);
+    }
+
+    private Set<Integer> recover_2pc() {
+        Set<Integer> checked = new HashSet<Integer>();
+        for (Object _key : this.master.keySet()) {
+            String key = _key.toString();
+            if (key.equals("locks") || key.equals("mode"))
+                continue;
+
+            // deal with prepared transactions first, since these are more time pressing
+            int xid = Integer.parseInt(key);
+            checked.add(xid);
+            if (tm.xidActiveAndPrepared(xid)) {
+                JSONObject obj = (JSONObject)this.master.get(key);
+                rm.recover(xid, obj.get("Prepared"), obj.get("Decision"), obj.get("MWDecision"));
+            }
+        }
+
+        for (Object _key : this.master.keySet()) {
+            String key = _key.toString();
+            if (key.equals("locks") || key.equals("mode"))
+            continue;
+
+            // deal with non prepared transactions -> invalid transaction or aborted already
+            int xid = Integer.parseInt(key);
+            if (checked.contains(xid)) continue;
+            checked.add(xid);
+            if (!tm.xidActiveAndPrepared(xid)) {
+                JSONObject obj = (JSONObject)this.master.get(key);
+                rm.recover(xid, obj.get("Prepared"), obj.get("Decision"), obj.get("MWDecision"));
+            }
+        }
+        return checked;
+    }
+
+    private void recover_Transactions(Set<Integer> checked) {
+        // Check to see if transactions failed during regular operations
+        for (Integer key : tm.getActiveData().keySet()) {
+            if (checked.contains(key)) continue;
+            Trace.info(key + " is a current transaction; it could have failed during the middleware coordination; check that it is still active");
+            if (!rm.askMWActive(key)) {
+                Trace.info(key + " is not active at the middleware, so abort");
+                // decision to abort
+                try {rm.abort(key);}
+                catch(Exception e) {}
+            }
+        }
     }
 
     public void flush_committed() {
@@ -276,7 +340,7 @@ public class Logger {
 
         for (Object a : active.keySet()) {
             int tid = Integer.parseInt(a.toString());
-            int timetolive = Integer.parseInt(((JSONObject)active.get(a)).get("timetolive").toString());
+            int timetolive = Integer.parseInt(((JSONObject)active.get(a)).get("timetolive").toString()) / 1000; // expects seconds
             boolean isprepared = Boolean.parseBoolean(((JSONObject)active.get(a)).get("isprepared").toString());
             Transaction t = new Transaction(tid, timetolive);
             t.setIsPrepared(isprepared);
@@ -345,22 +409,35 @@ public class Logger {
                     data.put(key, customer);
                 }
             }
-            System.out.println(tm);
-            System.out.println(tid);
-            System.out.println(t);
+            //System.out.println(tm);
+            //System.out.println(tid);
+            //System.out.println(t);
             this.tm.writeActiveData(tid, t);
         }
 
 
     }
 
+    public void prepare(int xid, String state, String data){
+        if (this.master.get(xid) == null)
+            this.master.put(xid, new JSONObject());
+        ((JSONObject)this.master.get(xid)).put(state, data);
+        flush_to_file(this.master, this.master_f);
+    }
+
+    public void setMode(int mode){
+        this.master.put("mode",mode);
+        flush_to_file(this.master, this.master_f);
+    }
 
 
     private void recover_master() {
         //this.in_progress is file object
         JSONObject obj = this.master;
 
-        if (obj.toString().equals("{}")) return;
+        if (obj.toString().equals("{}")) {
+            this.master.put("locks",new JSONObject());
+        };
     }
 
     public void write_committed(int xid) throws InvalidTransactionException{
@@ -389,8 +466,11 @@ public class Logger {
                 this.committed = jsonObject;
             else if (file.contains("in-progress.json"))
                 this.in_progress = jsonObject;
-            else if (file.contains("master.json"))
+            else if (file.contains("master.json")) {
                 this.master = jsonObject;
+                if (this.master.get("locks") == null)
+                    this.master.put("locks", new JSONObject());
+            }
             else {
                 Trace.error("Unknown file");
                 System.exit(-1);

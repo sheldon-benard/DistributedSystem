@@ -478,6 +478,30 @@ public abstract class Client
 				break;
 			}
 
+			case ResetCrashes: {
+				checkArgumentsCount(1, arguments.size());
+				System.out.println("Resetting crash modes");
+				m_resourceManager.resetCrashes();
+				break;
+			}
+
+			case CrashMiddleware: {
+				checkArgumentsCount(2, arguments.size());
+				int mode = toInt(arguments.elementAt(1));
+				System.out.println("Setting mode of MW to " + mode);
+				m_resourceManager.crashMiddleware(mode);
+				break;
+			}
+
+			case CrashResourceManager: {
+				checkArgumentsCount(3, arguments.size());
+				String rm = arguments.elementAt(1);
+				int mode = toInt(arguments.elementAt(2));
+				System.out.println("Setting RM=" + rm + " crash mode to " + mode);
+				m_resourceManager.crashResourceManager(rm, mode);
+				break;
+			}
+
 			case Quit:
 				checkArgumentsCount(1, arguments.size());
 

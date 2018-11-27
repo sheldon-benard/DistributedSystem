@@ -29,12 +29,22 @@ public interface IResourceManager extends Remote
     public int start()
             throws RemoteException;
 
+    public void resetCrashes() throws RemoteException;
+
+    public void crashMiddleware(int mode) throws RemoteException;
+
+    public void crashResourceManager(String rm, int mode) throws RemoteException;
+
     /**
      * Commit transaction
      * @return Success
      */
     public boolean commit(int xid)
             throws RemoteException,TransactionAbortedException, InvalidTransactionException;
+
+    public boolean prepare(int xid) throws RemoteException,TransactionAbortedException, InvalidTransactionException;
+
+    public boolean isActive(int xid) throws RemoteException;
 
     /**
      * Abort transaction

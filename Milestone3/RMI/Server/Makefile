@@ -18,8 +18,8 @@ compile-json: Server/JSON/*.java Server/JSON/parser/*.java
 	javac Server/JSON/*.java
 	javac Server/JSON/parser/*.java
 
-compile-middleware: Server/JSON/*.java Server/JSON/parser/*.java Server/RMI/*.java Server/Interface/IResourceManager.java Server/Common/*.java Server/Middleware/*.java
-	javac Server/JSON/parser/ParseException.java Server/JSON/parser/JSONParser.java Server/JSON/*.java Server/JSON/parser/*.java Server/Transactions/*.java Server/RMI/*.java Server/Interface/IResourceManager.java Server/Common/*.java Server/Middleware/*.java
+compile-middleware: Server/JSON/*.java Server/JSON/parser/*.java Server/LockManager/*.java Server/RMI/*.java Server/Interface/IResourceManager.java Server/Common/*.java Server/Middleware/*.java
+	javac Server/JSON/parser/ParseException.java Server/LockManager/*.java Server/JSON/parser/JSONParser.java Server/JSON/*.java Server/JSON/parser/*.java Server/Transactions/*.java Server/RMI/*.java Server/Interface/IResourceManager.java Server/Common/*.java Server/Middleware/*.java
 
 clean:
 	rm -f Server/Interface/*.class Server/Common/*.class Server/RMI/*.class Server/Middleware/*.class Server/LockManager/*.class Server/Transactions/*.class

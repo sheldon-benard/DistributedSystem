@@ -43,7 +43,6 @@ public class MiddlewareTM extends TransactionManager implements Runnable {
                     Set<Integer> keyset = activeTransactions.keySet();
                     for (Integer key : keyset) {
                         Transaction t = activeTransactions.get(key);
-
                         if (t != null && t.expired()) {
                             System.out.println(t.getXid() + " expired; aborting this transaction");
                             this.mw.abort(t.getXid());

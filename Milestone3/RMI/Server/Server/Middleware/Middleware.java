@@ -30,6 +30,7 @@ public class Middleware extends ResourceManager {
     protected MiddlewareTM tm;
     protected LockManager lm;
     private int timetolive = 60;
+    protected int middlewareMode = 0;
 
     public Middleware(String p_name)
     {
@@ -53,6 +54,74 @@ public class Middleware extends ResourceManager {
         Trace.info("Starting transaction - " + xid);
         this.flush_in_progress();
         return xid;
+    }
+
+    public void crashMiddleware(int mode) throws RemoteException {
+        System.out.println("Setting MW crash mode to " + mode);
+        this.middlewareMode = mode;
+    }
+
+    public void resetCrashes() throws RemoteException {
+        System.out.println("Resetting crash mode");
+        this.middlewareMode = 0;
+
+        try {
+            m_flightResourceManager.resetCrashes();
+        } catch (ConnectException e) {
+            if (!connectServer("Flight", s_flightServer.host, s_flightServer.port, s_flightServer.name))
+                throw new RemoteException("Flight Server connection timeout");
+            m_flightResourceManager.resetCrashes();
+        }
+
+        try {
+            m_carResourceManager.resetCrashes();
+        } catch (ConnectException e) {
+            if (!connectServer("Car", s_carServer.host, s_carServer.port, s_carServer.name))
+                throw new RemoteException("Car Server connection timeout");
+            m_carResourceManager.resetCrashes();
+        }
+
+        try {
+            m_roomResourceManager.resetCrashes();
+        } catch (ConnectException e) {
+            if (!connectServer("Room", s_roomServer.host, s_roomServer.port, s_roomServer.name))
+                throw new RemoteException("Room Server connection timeout");
+            m_roomResourceManager.resetCrashes();
+        }
+    }
+
+    public void crashResourceManager(String rm, int mode) throws RemoteException {
+        if (rm.equalsIgnoreCase("Flight") || rm.equalsIgnoreCase("Flights")) {
+            try {
+                m_flightResourceManager.crashResourceManager(rm, mode);
+            } catch (ConnectException e) {
+                if (!connectServer("Flight", s_flightServer.host, s_flightServer.port, s_flightServer.name))
+                    throw new RemoteException("Flight Server connection timeout");
+                m_flightResourceManager.crashResourceManager(rm, mode);
+            }
+        }
+        else if (rm.equalsIgnoreCase("Car") || rm.equalsIgnoreCase("Cars")) {
+            try {
+                m_carResourceManager.crashResourceManager(rm, mode);
+            } catch (ConnectException e) {
+                if (!connectServer("Car", s_carServer.host, s_carServer.port, s_carServer.name))
+                    throw new RemoteException("Car Server connection timeout");
+                m_carResourceManager.crashResourceManager(rm, mode);
+            }
+        }
+        else if (rm.equalsIgnoreCase("Room") || rm.equalsIgnoreCase("Rooms")) {
+            try {
+                m_roomResourceManager.crashResourceManager(rm, mode);
+            } catch (ConnectException e) {
+                if (!connectServer("Room", s_roomServer.host, s_roomServer.port, s_roomServer.name))
+                    throw new RemoteException("Room Server connection timeout");
+                m_roomResourceManager.crashResourceManager(rm, mode);
+            }
+        }
+        else
+            throw new RemoteException("Server not crashable");
+
+
     }
 
     public boolean commit(int xid) throws RemoteException,TransactionAbortedException, InvalidTransactionException
@@ -106,16 +175,33 @@ public class Middleware extends ResourceManager {
 
         Set<String> resources = t.getResourceManagers();
 
-        if (resources.contains("Flight"))
-            m_flightResourceManager.abort(xid);
+        if (resources.contains("Flight")) {
+            try {
+                m_flightResourceManager.abort(xid);
+            } catch (ConnectException e) {
+                if (connectServer("Flight", s_flightServer.host, s_flightServer.port, s_flightServer.name))
+                    m_flightResourceManager.abort(xid);
+            }
+        }
 
-        if (resources.contains("Car"))
-            m_carResourceManager.abort(xid);
 
-        if (resources.contains("Room"))
-            m_roomResourceManager.abort(xid);
+        if (resources.contains("Car")) {
+            try {
+                m_carResourceManager.abort(xid);
+            } catch (ConnectException e) {
+                if (connectServer("Car", s_carServer.host, s_carServer.port, s_carServer.name))
+                    m_carResourceManager.abort(xid);
+            }
+        }
 
-
+        if (resources.contains("Room")) {
+            try {
+                m_roomResourceManager.abort(xid);
+            } catch (ConnectException e) {
+                if (connectServer("Room", s_roomServer.host, s_roomServer.port, s_roomServer.name))
+                    m_roomResourceManager.abort(xid);
+            }
+        }
         endTransaction(xid, false);
         this.flush_in_progress();
     }
@@ -163,16 +249,12 @@ public class Middleware extends ResourceManager {
         acquireLock(id, Flight.getKey(flightNum), TransactionLockObject.LockType.LOCK_WRITE);
         addResourceManagerUsed(id,"Flight");
         try {
-            try {
-                return m_flightResourceManager.addFlight(id, flightNum, flightSeats, flightPrice);
-            } catch (ConnectException e) {
-                connectServer("Flight", s_flightServer.host, s_flightServer.port, s_flightServer.name);
-                return m_flightResourceManager.addFlight(id, flightNum, flightSeats, flightPrice);
-            }
-        } catch (Exception e) {
-            Trace.error(e.toString());
+            return m_flightResourceManager.addFlight(id, flightNum, flightSeats, flightPrice);
+        } catch (ConnectException e) {
+            if (!connectServer("Flight", s_flightServer.host, s_flightServer.port, s_flightServer.name))
+                throw new RemoteException("Server connection timeout");
+            return m_flightResourceManager.addFlight(id, flightNum, flightSeats, flightPrice);
         }
-        return false;
     }
 
     public boolean addCars(int xid, String location, int numCars, int price) throws RemoteException,TransactionAbortedException, InvalidTransactionException
@@ -184,17 +266,12 @@ public class Middleware extends ResourceManager {
         acquireLock(id, Car.getKey(location), TransactionLockObject.LockType.LOCK_WRITE);
         addResourceManagerUsed(id,"Car");
         try {
-            try {
-                return m_carResourceManager.addCars(id, location, numCars, price);
-            } catch (ConnectException e) {
-                connectServer("Car", s_carServer.host, s_carServer.port, s_carServer.name);
-                return m_carResourceManager.addCars(id, location, numCars, price);
-            }
-        } catch (Exception e) {
-            Trace.error(e.toString());
+            return m_carResourceManager.addCars(id, location, numCars, price);
+        } catch (ConnectException e) {
+            if (!connectServer("Car", s_carServer.host, s_carServer.port, s_carServer.name))
+                throw new RemoteException("Car Server connection timeout");
+            return m_carResourceManager.addCars(id, location, numCars, price);
         }
-        return false;
-
     }
 
     public boolean addRooms(int xid, String location, int numRooms, int price) throws RemoteException,TransactionAbortedException, InvalidTransactionException
@@ -206,16 +283,12 @@ public class Middleware extends ResourceManager {
         acquireLock(id, Room.getKey(location), TransactionLockObject.LockType.LOCK_WRITE);
         addResourceManagerUsed(id,"Room");
         try {
-            try {
-                return m_roomResourceManager.addRooms(id, location, numRooms, price);
-            } catch (ConnectException e) {
-                connectServer("Room", s_roomServer.host, s_roomServer.port, s_roomServer.name);
-                return m_roomResourceManager.addRooms(id, location, numRooms, price);
-            }
-        } catch (Exception e) {
-            Trace.error(e.toString());
+            return m_roomResourceManager.addRooms(id, location, numRooms, price);
+        } catch (ConnectException e) {
+            if (!connectServer("Room", s_roomServer.host, s_roomServer.port, s_roomServer.name))
+                throw new RemoteException("Room Server connection timeout");
+            return m_roomResourceManager.addRooms(id, location, numRooms, price);
         }
-        return false;
 
     }
 
@@ -228,16 +301,11 @@ public class Middleware extends ResourceManager {
         acquireLock(id, Flight.getKey(flightNum), TransactionLockObject.LockType.LOCK_WRITE);
         addResourceManagerUsed(id,"Flight");
         try {
-            try {
-                return m_flightResourceManager.deleteFlight(id, flightNum);
-            } catch (ConnectException e) {
-                connectServer("Flight", s_flightServer.host, s_flightServer.port, s_flightServer.name);
-                return m_flightResourceManager.deleteFlight(id, flightNum);
-            }
-        }
-        catch (Exception e) {
-            Trace.error(e.toString());
-            return false;
+            return m_flightResourceManager.deleteFlight(id, flightNum);
+        } catch (ConnectException e) {
+            if (!connectServer("Flight", s_flightServer.host, s_flightServer.port, s_flightServer.name))
+                throw new RemoteException("Flight Server connection timeout");
+            return m_flightResourceManager.deleteFlight(id, flightNum);
         }
 
     }
@@ -251,15 +319,11 @@ public class Middleware extends ResourceManager {
         acquireLock(id, Car.getKey(location), TransactionLockObject.LockType.LOCK_WRITE);
         addResourceManagerUsed(id,"Car");
         try {
-            try {
-                return m_carResourceManager.deleteCars(id, location);
-            } catch (ConnectException e) {
-                connectServer("Car", s_carServer.host, s_carServer.port, s_carServer.name);
-                return m_carResourceManager.deleteCars(id, location);
-            }
-        } catch (Exception e) {
-            Trace.error(e.toString());
-            return false;
+            return m_carResourceManager.deleteCars(id, location);
+        } catch (ConnectException e) {
+            if (!connectServer("Car", s_carServer.host, s_carServer.port, s_carServer.name))
+                throw new RemoteException("Car Server connection timeout");
+            return m_carResourceManager.deleteCars(id, location);
         }
 
     }
@@ -273,15 +337,11 @@ public class Middleware extends ResourceManager {
         acquireLock(id, Room.getKey(location), TransactionLockObject.LockType.LOCK_WRITE);
         addResourceManagerUsed(id,"Room");
         try {
-            try {
-                return m_roomResourceManager.deleteRooms(id, location);
-            } catch (ConnectException e) {
-                connectServer("Room", s_roomServer.host, s_roomServer.port, s_roomServer.name);
-                return m_roomResourceManager.deleteRooms(id, location);
-            }
-        } catch (Exception e) {
-            Trace.error(e.toString());
-            return false;
+            return m_roomResourceManager.deleteRooms(id, location);
+        } catch (ConnectException e) {
+            if (!connectServer("Room", s_roomServer.host, s_roomServer.port, s_roomServer.name))
+                throw new RemoteException("Room Server connection timeout");
+            return m_roomResourceManager.deleteRooms(id, location);
         }
 
     }
@@ -361,15 +421,39 @@ public class Middleware extends ResourceManager {
                 if (type.equals("flight")) {
                     acquireLock(xid, reservedKey, TransactionLockObject.LockType.LOCK_WRITE);
                     addResourceManagerUsed(id,"Flight");
-                    m_flightResourceManager.removeReservation(xid, customerID, reserveditem.getKey(), reserveditem.getCount());
+                    try {
+                        m_flightResourceManager.removeReservation(xid, customerID, reserveditem.getKey(), reserveditem.getCount());
+                    } catch (ConnectException e) {
+                        if (!connectServer("Flight", s_flightServer.host, s_flightServer.port, s_flightServer.name)) {
+                            abort(xid);
+                            throw new RemoteException("Flight Server connection timeout during deletion event; abort");
+                        }
+                        m_flightResourceManager.removeReservation(xid, customerID, reserveditem.getKey(), reserveditem.getCount());
+                    }
                 } else if (type.equals("car")) {
                     acquireLock(xid, reservedKey, TransactionLockObject.LockType.LOCK_WRITE);
                     addResourceManagerUsed(id,"Car");
-                    m_carResourceManager.removeReservation(xid, customerID, reserveditem.getKey(), reserveditem.getCount());
+                    try {
+                        m_carResourceManager.removeReservation(xid, customerID, reserveditem.getKey(), reserveditem.getCount());
+                    } catch (ConnectException e) {
+                        if (!connectServer("Car", s_carServer.host, s_carServer.port, s_carServer.name)) {
+                            abort(xid);
+                            throw new RemoteException("Car Server connection timeout during deletion event; abort");
+                        }
+                        m_carResourceManager.removeReservation(xid, customerID, reserveditem.getKey(), reserveditem.getCount());
+                    }
                 } else if (type.equals("room")) {
                     acquireLock(xid, reservedKey, TransactionLockObject.LockType.LOCK_WRITE);
                     addResourceManagerUsed(id,"Room");
-                    m_roomResourceManager.removeReservation(xid, customerID, reserveditem.getKey(), reserveditem.getCount());
+                    try {
+                        m_roomResourceManager.removeReservation(xid, customerID, reserveditem.getKey(), reserveditem.getCount());
+                    } catch (ConnectException e) {
+                        if (!connectServer("Room", s_roomServer.host, s_roomServer.port, s_roomServer.name)) {
+                            abort(xid);
+                            throw new RemoteException("Room Server connection timeout during deletion event; abort");
+                        }
+                        m_roomResourceManager.removeReservation(xid, customerID, reserveditem.getKey(), reserveditem.getCount());
+                    }
                 } else
                     Trace.error("RM::deleteCustomer(" + xid + ", " + customerID + ") failed--reservedKey (" + reservedKey + ") wasn't of expected type.");
 
@@ -391,15 +475,11 @@ public class Middleware extends ResourceManager {
         acquireLock(id, Flight.getKey(flightNumber), TransactionLockObject.LockType.LOCK_READ);
         addResourceManagerUsed(id,"Flight");
         try {
-            try {
-                return m_flightResourceManager.queryFlight(id, flightNumber);
-            } catch (ConnectException e) {
-                connectServer("Flight", s_flightServer.host, s_flightServer.port, s_flightServer.name);
-                return m_flightResourceManager.queryFlight(id, flightNumber);
-            }
-        } catch (Exception e) {
-            Trace.error(e.toString());
-            return -1;
+            return m_flightResourceManager.queryFlight(id, flightNumber);
+        } catch (ConnectException e) {
+            if (!connectServer("Flight", s_flightServer.host, s_flightServer.port, s_flightServer.name))
+                throw new RemoteException("Flight Server connection timeout");
+            return m_flightResourceManager.queryFlight(id, flightNumber);
         }
     }
 
@@ -412,15 +492,11 @@ public class Middleware extends ResourceManager {
         acquireLock(id, Car.getKey(location), TransactionLockObject.LockType.LOCK_READ);
         addResourceManagerUsed(id,"Car");
         try {
-            try {
-                return m_carResourceManager.queryCars(id, location);
-            } catch (ConnectException e) {
-                connectServer("Car", s_carServer.host, s_carServer.port, s_carServer.name);
-                return m_carResourceManager.queryCars(id, location);
-            }
-        } catch (Exception e) {
-            Trace.error(e.toString());
-            return -1;
+            return m_carResourceManager.queryCars(id, location);
+        } catch (ConnectException e) {
+            if (!connectServer("Car", s_carServer.host, s_carServer.port, s_carServer.name))
+                throw new RemoteException("Car Server connection timeout");
+            return m_carResourceManager.queryCars(id, location);
         }
     }
 
@@ -433,15 +509,11 @@ public class Middleware extends ResourceManager {
         acquireLock(id, Room.getKey(location), TransactionLockObject.LockType.LOCK_READ);
         addResourceManagerUsed(id,"Room");
         try {
-            try {
-                return m_roomResourceManager.queryRooms(id, location);
-            } catch (ConnectException e) {
-                connectServer("Room", s_roomServer.host, s_roomServer.port, s_roomServer.name);
-                return m_roomResourceManager.queryRooms(id, location);
-            }
-        } catch (Exception e) {
-            Trace.error(e.toString());
-            return -1;
+            return m_roomResourceManager.queryRooms(id, location);
+        } catch (ConnectException e) {
+            if (!connectServer("Room", s_roomServer.host, s_roomServer.port, s_roomServer.name))
+                throw new RemoteException("Room Server connection timeout");
+            return m_roomResourceManager.queryRooms(id, location);
         }
     }
 
@@ -454,15 +526,11 @@ public class Middleware extends ResourceManager {
         acquireLock(id, Flight.getKey(flightNumber), TransactionLockObject.LockType.LOCK_READ);
         addResourceManagerUsed(id,"Flight");
         try {
-            try {
-                return m_flightResourceManager.queryFlightPrice(id, flightNumber);
-            } catch (ConnectException e) {
-                connectServer("Flight", s_flightServer.host, s_flightServer.port, s_flightServer.name);
-                return m_flightResourceManager.queryFlightPrice(id, flightNumber);
-            }
-        } catch (Exception e) {
-            Trace.error(e.toString());
-            return -1;
+            return m_flightResourceManager.queryFlightPrice(id, flightNumber);
+        } catch (ConnectException e) {
+            if (!connectServer("Flight", s_flightServer.host, s_flightServer.port, s_flightServer.name))
+                throw new RemoteException("Flight Server connection timeout");
+            return m_flightResourceManager.queryFlightPrice(id, flightNumber);
         }
     }
 
@@ -475,15 +543,11 @@ public class Middleware extends ResourceManager {
         acquireLock(id, Car.getKey(location), TransactionLockObject.LockType.LOCK_READ);
         addResourceManagerUsed(id,"Car");
         try {
-            try {
-                return m_carResourceManager.queryCarsPrice(id, location);
-            } catch (ConnectException e) {
-                connectServer("Car", s_carServer.host, s_carServer.port, s_carServer.name);
-                return m_carResourceManager.queryCarsPrice(id, location);
-            }
-        } catch (Exception e) {
-            Trace.error(e.toString());
-            return -1;
+            return m_carResourceManager.queryCarsPrice(id, location);
+        } catch (ConnectException e) {
+            if (!connectServer("Car", s_carServer.host, s_carServer.port, s_carServer.name))
+                throw new RemoteException("Car Server connection timeout");
+            return m_carResourceManager.queryCarsPrice(id, location);
         }
     }
 
@@ -496,15 +560,11 @@ public class Middleware extends ResourceManager {
         acquireLock(id, Room.getKey(location), TransactionLockObject.LockType.LOCK_READ);
         addResourceManagerUsed(id,"Room");
         try {
-            try {
-                return m_roomResourceManager.queryRoomsPrice(id, location);
-            } catch (ConnectException e) {
-                connectServer("Room", s_roomServer.host, s_roomServer.port, s_roomServer.name);
-                return m_roomResourceManager.queryRoomsPrice(id, location);
-            }
-        } catch (Exception e) {
-            Trace.error(e.toString());
-            return -1;
+            return m_roomResourceManager.queryRoomsPrice(id, location);
+        } catch (ConnectException e) {
+            if (!connectServer("Room", s_roomServer.host, s_roomServer.port, s_roomServer.name))
+                throw new RemoteException("Room Server connection timeout");
+            return m_roomResourceManager.queryRoomsPrice(id, location);
         }
     }
 
@@ -528,18 +588,37 @@ public class Middleware extends ResourceManager {
 
         acquireLock(xid, key, TransactionLockObject.LockType.LOCK_READ);
         addResourceManagerUsed(xid,"Flight");
-        int price = m_flightResourceManager.itemsAvailable(xid, key, 1);
+        int price;
+        try {
+            price = m_flightResourceManager.itemsAvailable(xid, key, 1);
+        } catch (ConnectException e) {
+            if (!connectServer("Flight", s_flightServer.host, s_flightServer.port, s_flightServer.name))
+                throw new RemoteException("Flight Server connection timeout");
+            price = m_flightResourceManager.itemsAvailable(xid, key, 1);
+        }
 
         if (price < 0) {
             Trace.warn("RM::reserveItem(" + xid + ", " + customerID + ", " + flightNumber + ")  failed--item unavailable");
             return false;
         }
         acquireLock(xid, key, TransactionLockObject.LockType.LOCK_WRITE);
-        if (m_flightResourceManager.reserveFlight(xid, customerID, flightNumber)) {
-            acquireLock(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_WRITE);
-            customer.reserve(key, String.valueOf(flightNumber), price);
-            writeData(xid, customer.getKey(), customer);
-            return true;
+
+        try {
+            if (m_flightResourceManager.reserveFlight(xid, customerID, flightNumber)) {
+                acquireLock(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_WRITE);
+                customer.reserve(key, String.valueOf(flightNumber), price);
+                writeData(xid, customer.getKey(), customer);
+                return true;
+            }
+        } catch (ConnectException e) {
+            if (!connectServer("Flight", s_flightServer.host, s_flightServer.port, s_flightServer.name))
+                throw new RemoteException("Flight Server connection timeout");
+            if (m_flightResourceManager.reserveFlight(xid, customerID, flightNumber)) {
+                acquireLock(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_WRITE);
+                customer.reserve(key, String.valueOf(flightNumber), price);
+                writeData(xid, customer.getKey(), customer);
+                return true;
+            }
         }
         Trace.warn("RM::reserveItem(" + xid + ", " + customerID + ", " + flightNumber + ")  failed--Could not reserve item");
         return false;
@@ -566,7 +645,14 @@ public class Middleware extends ResourceManager {
 
         acquireLock(xid, key, TransactionLockObject.LockType.LOCK_READ);
         addResourceManagerUsed(id,"Car");
-        int price = m_carResourceManager.itemsAvailable(xid, key, 1);
+        int price;
+        try {
+            price = m_carResourceManager.itemsAvailable(xid, key, 1);
+        } catch (ConnectException e) {
+            if (!connectServer("Car", s_carServer.host, s_carServer.port, s_carServer.name))
+                throw new RemoteException("Car Server connection timeout");
+            price = m_carResourceManager.itemsAvailable(xid, key, 1);
+        }
 
         if (price < 0) {
             Trace.warn("RM::reserveItem(" + xid + ", " + customerID + ", " + location + ")  failed--item unavailable");
@@ -574,11 +660,23 @@ public class Middleware extends ResourceManager {
         }
 
         acquireLock(xid, key, TransactionLockObject.LockType.LOCK_WRITE);
-        if (m_carResourceManager.reserveCar(xid, customerID, location)) {
-            acquireLock(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_WRITE);
-            customer.reserve(key, location, price);
-            writeData(xid, customer.getKey(), customer);
-            return true;
+
+        try {
+            if (m_carResourceManager.reserveCar(xid, customerID, location)) {
+                acquireLock(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_WRITE);
+                customer.reserve(key, location, price);
+                writeData(xid, customer.getKey(), customer);
+                return true;
+            }
+        } catch (ConnectException e) {
+            if (!connectServer("Car", s_carServer.host, s_carServer.port, s_carServer.name))
+                throw new RemoteException("Car Server connection timeout");
+            if (m_carResourceManager.reserveCar(xid, customerID, location)) {
+                acquireLock(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_WRITE);
+                customer.reserve(key, location, price);
+                writeData(xid, customer.getKey(), customer);
+                return true;
+            }
         }
         Trace.warn("RM::reserveItem(" + xid + ", " + customerID + ", " + location + ")  failed--Could not reserve item");
         return false;
@@ -605,7 +703,14 @@ public class Middleware extends ResourceManager {
 
         acquireLock(xid, key, TransactionLockObject.LockType.LOCK_READ);
         addResourceManagerUsed(id,"Room");
-        int price = m_roomResourceManager.itemsAvailable(xid, key, 1);
+        int price;
+        try {
+            price = m_roomResourceManager.itemsAvailable(xid, key, 1);
+        } catch (ConnectException e) {
+            if (!connectServer("Room", s_roomServer.host, s_roomServer.port, s_roomServer.name))
+                throw new RemoteException("Room Server connection timeout");
+            price = m_roomResourceManager.itemsAvailable(xid, key, 1);
+        }
 
         if (price < 0) {
             Trace.warn("RM::reserveItem(" + xid + ", " + customerID + ", " + location + ")  failed--item unavailable");
@@ -613,11 +718,22 @@ public class Middleware extends ResourceManager {
         }
 
         acquireLock(xid, key, TransactionLockObject.LockType.LOCK_WRITE);
-        if (m_roomResourceManager.reserveRoom(xid, customerID, location)) {
-            acquireLock(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_WRITE);
-            customer.reserve(key, location, price);
-            writeData(xid, customer.getKey(), customer);
-            return true;
+        try {
+            if (m_roomResourceManager.reserveRoom(xid, customerID, location)) {
+                acquireLock(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_WRITE);
+                customer.reserve(key, location, price);
+                writeData(xid, customer.getKey(), customer);
+                return true;
+            }
+        } catch (ConnectException e) {
+            if (!connectServer("Room", s_roomServer.host, s_roomServer.port, s_roomServer.name))
+                throw new RemoteException("Room Server connection timeout");
+            if (m_roomResourceManager.reserveRoom(xid, customerID, location)) {
+                acquireLock(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_WRITE);
+                customer.reserve(key, location, price);
+                writeData(xid, customer.getKey(), customer);
+                return true;
+            }
         }
         Trace.warn("RM::reserveItem(" + xid + ", " + customerID + ", " + location + ")  failed--Could not reserve item");
         return false;
@@ -655,8 +771,14 @@ public class Middleware extends ResourceManager {
                 }
                 acquireLock(xid, Flight.getKey(keyInt), TransactionLockObject.LockType.LOCK_READ);
                 addResourceManagerUsed(id,"Flight");
-                int price = m_flightResourceManager.itemsAvailable(xid, Flight.getKey(keyInt), countMap.get(key));
-
+                int price;
+                try {
+                    price = m_flightResourceManager.itemsAvailable(xid, Flight.getKey(keyInt), countMap.get(key));
+                } catch (ConnectException e) {
+                    if (!connectServer("Flight", s_flightServer.host, s_flightServer.port, s_flightServer.name))
+                        throw new RemoteException("Flight Server connection timeout");
+                    price = m_flightResourceManager.itemsAvailable(xid, Flight.getKey(keyInt), countMap.get(key));
+                }
                 if (price < 0) {
                     Trace.warn("RM:bundle(" + xid + ", customer=" + customerID + ", " + flightNumbers.toString() + ", " + location + ")  failed--flight-" + key + " doesn't have enough spots");
                     return false;
@@ -666,8 +788,13 @@ public class Middleware extends ResourceManager {
             }
             acquireLock(xid, Car.getKey(location), TransactionLockObject.LockType.LOCK_READ);
             addResourceManagerUsed(id,"Car");
-            carPrice = m_carResourceManager.itemsAvailable(xid, Car.getKey(location), 1);
-
+            try {
+                carPrice = m_carResourceManager.itemsAvailable(xid, Car.getKey(location), 1);
+            } catch (ConnectException e) {
+                if (!connectServer("Car", s_carServer.host, s_carServer.port, s_carServer.name))
+                    throw new RemoteException("Car Server connection timeout");
+                carPrice = m_carResourceManager.itemsAvailable(xid, Car.getKey(location), 1);
+            }
             if (carPrice < 0) {
                 Trace.warn("RM:bundle(" + xid + ", customer=" + customerID + ", " + flightNumbers.toString() + ", " + location + ")  failed--car-" + location + " doesn't have enough spots");
                 return false;
@@ -675,15 +802,28 @@ public class Middleware extends ResourceManager {
 
             acquireLock(xid, Room.getKey(location), TransactionLockObject.LockType.LOCK_READ);
             addResourceManagerUsed(id,"Room");
-            roomPrice = m_roomResourceManager.itemsAvailable(xid, Room.getKey(location), 1);
-
+            try {
+                roomPrice = m_roomResourceManager.itemsAvailable(xid, Room.getKey(location), 1);
+            } catch (ConnectException e) {
+                if (!connectServer("Room", s_roomServer.host, s_roomServer.port, s_roomServer.name))
+                    throw new RemoteException("Room Server connection timeout");
+                roomPrice = m_roomResourceManager.itemsAvailable(xid, Room.getKey(location), 1);
+            }
             if (roomPrice < 0) {
                 Trace.warn("RM:bundle(" + xid + ", customer=" + customerID + ", " + flightNumbers.toString() + ", " + location + ")  failed--room-" + location + " doesn't have enough spots");
                 return false;
             }
 
             acquireLock(xid, Room.getKey(location), TransactionLockObject.LockType.LOCK_WRITE);
-            m_roomResourceManager.reserveRoom(xid, customerID, location);
+            try {
+                m_roomResourceManager.reserveRoom(xid, customerID, location);
+            } catch (ConnectException e) {
+                if (!connectServer("Room", s_roomServer.host, s_roomServer.port, s_roomServer.name)) {
+                    abort(xid);
+                    throw new RemoteException("Room Server connection timeout during bundle reservations; abort");
+                }
+                m_roomResourceManager.reserveRoom(xid, customerID, location);
+            }
 
             acquireLock(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_WRITE);
             addResourceManagerUsed(id,"Customer");
@@ -692,13 +832,19 @@ public class Middleware extends ResourceManager {
             writeData(xid, customer.getKey(), customer);
 
             acquireLock(xid, Car.getKey(location), TransactionLockObject.LockType.LOCK_WRITE);
-            m_carResourceManager.reserveCar(xid, customerID, location);
+            try {
+                m_carResourceManager.reserveCar(xid, customerID, location);
+            } catch (ConnectException e) {
+                if (!connectServer("Car", s_carServer.host, s_carServer.port, s_carServer.name)) {
+                    abort(xid);
+                    throw new RemoteException("Car Server connection timeout during bundle reservations; abort");
+                }
+                m_carResourceManager.reserveCar(xid, customerID, location);
+            }
 
             // Already have customer LOCK_WRITE
             customer.reserve(Car.getKey(location), location, carPrice);
             writeData(xid, customer.getKey(), customer);
-
-
 
 
         } else if (car) {
@@ -714,7 +860,14 @@ public class Middleware extends ResourceManager {
                 }
                 acquireLock(xid, Flight.getKey(keyInt), TransactionLockObject.LockType.LOCK_READ);
                 addResourceManagerUsed(id,"Flight");
-                int price = m_flightResourceManager.itemsAvailable(xid, Flight.getKey(keyInt), countMap.get(key));
+                int price;
+                try {
+                    price = m_flightResourceManager.itemsAvailable(xid, Flight.getKey(keyInt), countMap.get(key));
+                } catch (ConnectException e) {
+                    if (!connectServer("Flight", s_flightServer.host, s_flightServer.port, s_flightServer.name))
+                        throw new RemoteException("Flight Server connection timeout");
+                    price = m_flightResourceManager.itemsAvailable(xid, Flight.getKey(keyInt), countMap.get(key));
+                }
 
                 if (price < 0) {
                     Trace.warn("RM:bundle(" + xid + ", customer=" + customerID + ", " + flightNumbers.toString() + ", " + location + ")  failed--flight-" + key + " doesn't have enough spots");
@@ -725,14 +878,28 @@ public class Middleware extends ResourceManager {
             }
             acquireLock(xid, Car.getKey(location), TransactionLockObject.LockType.LOCK_READ);
             addResourceManagerUsed(id,"Car");
-            carPrice = m_carResourceManager.itemsAvailable(xid, Car.getKey(location), 1);
+            try {
+                carPrice = m_carResourceManager.itemsAvailable(xid, Car.getKey(location), 1);
+            } catch (ConnectException e) {
+                if (!connectServer("Car", s_carServer.host, s_carServer.port, s_carServer.name))
+                    throw new RemoteException("Car Server connection timeout");
+                carPrice = m_carResourceManager.itemsAvailable(xid, Car.getKey(location), 1);
+            }
 
             if (carPrice < 0) {
                 Trace.warn("RM:bundle(" + xid + ", customer=" + customerID + ", " + flightNumbers.toString() + ", " + location + ")  failed--car-" + location + " doesn't have enough spots");
                 return false;
             }
             acquireLock(xid, Car.getKey(location), TransactionLockObject.LockType.LOCK_WRITE);
-            m_carResourceManager.reserveCar(xid, customerID, location);
+            try {
+                m_carResourceManager.reserveCar(xid, customerID, location);
+            } catch (ConnectException e) {
+                if (!connectServer("Car", s_carServer.host, s_carServer.port, s_carServer.name)) {
+                    abort(xid);
+                    throw new RemoteException("Car Server connection timeout during bundle reservations; abort");
+                }
+                m_carResourceManager.reserveCar(xid, customerID, location);
+            }
 
             acquireLock(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_WRITE);
             addResourceManagerUsed(id,"Customer");
@@ -753,7 +920,14 @@ public class Middleware extends ResourceManager {
                 }
                 acquireLock(xid, Flight.getKey(keyInt), TransactionLockObject.LockType.LOCK_READ);
                 addResourceManagerUsed(id,"Flight");
-                int price = m_flightResourceManager.itemsAvailable(xid, Flight.getKey(keyInt), countMap.get(key));
+                int price;
+                try {
+                    price = m_flightResourceManager.itemsAvailable(xid, Flight.getKey(keyInt), countMap.get(key));
+                } catch (ConnectException e) {
+                    if (!connectServer("Flight", s_flightServer.host, s_flightServer.port, s_flightServer.name))
+                        throw new RemoteException("Flight Server connection timeout");
+                    price = m_flightResourceManager.itemsAvailable(xid, Flight.getKey(keyInt), countMap.get(key));
+                }
 
                 if (price < 0) {
                     Trace.warn("RM:bundle(" + xid + ", customer=" + customerID + ", " + flightNumbers.toString() + ", " + location + ")  failed--flight-" + key + " doesn't have enough spots");
@@ -764,14 +938,28 @@ public class Middleware extends ResourceManager {
             }
             acquireLock(xid, Room.getKey(location), TransactionLockObject.LockType.LOCK_READ);
             addResourceManagerUsed(id,"Room");
-            roomPrice = m_roomResourceManager.itemsAvailable(xid, Room.getKey(location), 1);
+            try {
+                roomPrice = m_roomResourceManager.itemsAvailable(xid, Room.getKey(location), 1);
+            } catch (ConnectException e) {
+                if (!connectServer("Room", s_roomServer.host, s_roomServer.port, s_roomServer.name))
+                    throw new RemoteException("Room Server connection timeout");
+                roomPrice = m_roomResourceManager.itemsAvailable(xid, Room.getKey(location), 1);
+            }
 
             if (roomPrice < 0) {
                 Trace.warn("RM:bundle(" + xid + ", customer=" + customerID + ", " + flightNumbers.toString() + ", " + location + ")  failed--room-" + location + " doesn't have enough spots");
                 return false;
             }
             acquireLock(xid, Room.getKey(location), TransactionLockObject.LockType.LOCK_WRITE);
-            m_roomResourceManager.reserveRoom(xid, customerID, location);
+            try {
+                m_roomResourceManager.reserveRoom(xid, customerID, location);
+            } catch (ConnectException e) {
+                if (!connectServer("Room", s_roomServer.host, s_roomServer.port, s_roomServer.name)) {
+                    abort(xid);
+                    throw new RemoteException("Room Server connection timeout during bundle reservations; abort");
+                }
+                m_roomResourceManager.reserveRoom(xid, customerID, location);
+            }
 
             acquireLock(xid, Customer.getKey(customerID), TransactionLockObject.LockType.LOCK_WRITE);
             addResourceManagerUsed(id,"Customer");
@@ -792,7 +980,14 @@ public class Middleware extends ResourceManager {
                 }
                 acquireLock(xid, Flight.getKey(keyInt), TransactionLockObject.LockType.LOCK_READ);
                 addResourceManagerUsed(id,"Flight");
-                int price = m_flightResourceManager.itemsAvailable(xid, Flight.getKey(keyInt), countMap.get(key));
+                int price;
+                try {
+                    price = m_flightResourceManager.itemsAvailable(xid, Flight.getKey(keyInt), countMap.get(key));
+                } catch (ConnectException e) {
+                    if (!connectServer("Flight", s_flightServer.host, s_flightServer.port, s_flightServer.name))
+                        throw new RemoteException("Flight Server connection timeout");
+                    price = m_flightResourceManager.itemsAvailable(xid, Flight.getKey(keyInt), countMap.get(key));
+                }
 
                 if (price < 0) {
                     Trace.warn("RM:bundle(" + xid + ", customer=" + customerID + ", " + flightNumbers.toString() + ", " + location + ")  failed--flight-" + key + " doesn't have enough spots");
@@ -813,7 +1008,15 @@ public class Middleware extends ResourceManager {
                 int price = flightPrice.get(key);
 
                 acquireLock(xid, Flight.getKey(key), TransactionLockObject.LockType.LOCK_WRITE);
-                m_flightResourceManager.reserveFlight(xid, customerID, key);
+                try {
+                    m_flightResourceManager.reserveFlight(xid, customerID, key);
+                } catch (ConnectException e) {
+                    if (!connectServer("Flight", s_flightServer.host, s_flightServer.port, s_flightServer.name)) {
+                        abort(xid);
+                        throw new RemoteException("Flight Server connection timeout during bundle reservations; abort");
+                    }
+                    m_flightResourceManager.reserveFlight(xid, customerID, key);
+                }
                 customer.reserve(Flight.getKey(key), String.valueOf(key), price);
                 writeData(xid, customer.getKey(), customer);
             }
@@ -861,17 +1064,35 @@ public class Middleware extends ResourceManager {
                 switch (type) {
                     case "flight": {
                         addResourceManagerUsed(id,"Flight");
-                        summary += m_flightResourceManager.Analytics(xid, reservation, upperBound);
+                        try {
+                            summary += m_flightResourceManager.Analytics(xid, reservation, upperBound);
+                        } catch (ConnectException e) {
+                            if (!connectServer("Flight", s_flightServer.host, s_flightServer.port, s_flightServer.name))
+                                throw new RemoteException("Flight Server connection timeout");
+                            summary += m_flightResourceManager.Analytics(xid, reservation, upperBound);
+                        }
                         break;
                     }
                     case "car": {
                         addResourceManagerUsed(id,"Car");
-                        summary += m_carResourceManager.Analytics(xid, reservation, upperBound);
+                        try {
+                            summary += m_carResourceManager.Analytics(xid, reservation, upperBound);
+                        } catch (ConnectException e) {
+                            if (!connectServer("Car", s_carServer.host, s_carServer.port, s_carServer.name))
+                                throw new RemoteException("Car Server connection timeout");
+                            summary += m_carResourceManager.Analytics(xid, reservation, upperBound);
+                        }
                         break;
                     }
                     case "room": {
                         addResourceManagerUsed(id,"Room");
-                        summary += m_roomResourceManager.Analytics(xid, reservation, upperBound);
+                        try {
+                            summary += m_roomResourceManager.Analytics(xid, reservation, upperBound);
+                        } catch (ConnectException e) {
+                            if (!connectServer("Room", s_roomServer.host, s_roomServer.port, s_roomServer.name))
+                                throw new RemoteException("Room Server connection timeout");
+                            summary += m_roomResourceManager.Analytics(xid, reservation, upperBound);
+                        }
                         break;
                     }
                 }
@@ -923,8 +1144,11 @@ public class Middleware extends ResourceManager {
         return map;
     }
 
-    protected void connectServer(String type, String server, int port, String name)
+    protected boolean connectServer(String type, String server, int port, String name)
     {
+        int waitTime = 30 * 1000; // ms
+        int wait = 500;
+        int loops = waitTime / wait;
         try {
             boolean first = true;
             while (true) {
@@ -946,15 +1170,20 @@ public class Middleware extends ResourceManager {
                         }
                     }
                     System.out.println("Connected to '" + name + "' server [" + server + ":" + port + "/" + name + "]");
-                    break;
+                    return true;
                 }
                 catch (NotBoundException|RemoteException e) {
+                    loops--;
+                    if (loops < 0) {
+                        System.out.println("Timed out waiting for '" + name + "' server [" + server + ":" + port + "/" + name + "]");
+                        return false;
+                    }
                     if (first) {
                         System.out.println("Waiting for '" + name + "' server [" + server + ":" + port + "/" + name + "]");
                         first = false;
                     }
                 }
-                Thread.sleep(500);
+                Thread.sleep(wait);
             }
         }
         catch (Exception e) {
@@ -962,6 +1191,11 @@ public class Middleware extends ResourceManager {
             e.printStackTrace();
             System.exit(1);
         }
+        return false;
+    }
+
+    public boolean isActive(int xid) throws RemoteException {
+        return tm.xidActive(xid);
     }
 
     protected void checkTransaction(int xid) throws TransactionAbortedException, InvalidTransactionException{

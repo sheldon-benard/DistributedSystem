@@ -160,6 +160,7 @@ public class Middleware extends ResourceManager {
         endTransaction(xid, true);
         this.flush_committed();
         this.flush_in_progress();
+        this.log.lastCommitted(xid);
         return true;
     }
 
@@ -219,9 +220,25 @@ public class Middleware extends ResourceManager {
     }
 
     public boolean shutdown() throws RemoteException {
-        m_flightResourceManager.shutdown();
-        m_carResourceManager.shutdown();
-        m_roomResourceManager.shutdown();
+        try {
+            m_flightResourceManager.shutdown();
+        } catch (ConnectException e) {
+            if (connectServer("Flight", s_flightServer.host, s_flightServer.port, s_flightServer.name))
+                m_flightResourceManager.shutdown();
+        }
+
+        try {
+            m_carResourceManager.shutdown();
+        } catch (ConnectException e) {
+            if (!connectServer("Car", s_carServer.host, s_carServer.port, s_carServer.name))
+                m_carResourceManager.shutdown();
+        }
+        try {
+            m_roomResourceManager.shutdown();
+        } catch (ConnectException e) {
+            if (!connectServer("Room", s_roomServer.host, s_roomServer.port, s_roomServer.name))
+                m_roomResourceManager.shutdown();
+        }
 
         new Thread() {
             @Override

@@ -67,7 +67,7 @@ public class Middleware extends ResourceManager {
 
         try {
             m_flightResourceManager.resetCrashes();
-        } catch (ConnectException e) {
+        } catch (Exception e) {
             if (!connectServer("Flight", s_flightServer.host, s_flightServer.port, s_flightServer.name))
                 throw new RemoteException("Flight Server connection timeout");
             m_flightResourceManager.resetCrashes();
@@ -75,7 +75,7 @@ public class Middleware extends ResourceManager {
 
         try {
             m_carResourceManager.resetCrashes();
-        } catch (ConnectException e) {
+        } catch (Exception e) {
             if (!connectServer("Car", s_carServer.host, s_carServer.port, s_carServer.name))
                 throw new RemoteException("Car Server connection timeout");
             m_carResourceManager.resetCrashes();
@@ -83,7 +83,7 @@ public class Middleware extends ResourceManager {
 
         try {
             m_roomResourceManager.resetCrashes();
-        } catch (ConnectException e) {
+        } catch (Exception e) {
             if (!connectServer("Room", s_roomServer.host, s_roomServer.port, s_roomServer.name))
                 throw new RemoteException("Room Server connection timeout");
             m_roomResourceManager.resetCrashes();
@@ -94,7 +94,7 @@ public class Middleware extends ResourceManager {
         if (rm.equalsIgnoreCase("Flight") || rm.equalsIgnoreCase("Flights")) {
             try {
                 m_flightResourceManager.crashResourceManager(rm, mode);
-            } catch (ConnectException e) {
+            } catch (Exception e) {
                 if (!connectServer("Flight", s_flightServer.host, s_flightServer.port, s_flightServer.name))
                     throw new RemoteException("Flight Server connection timeout");
                 m_flightResourceManager.crashResourceManager(rm, mode);
@@ -103,7 +103,7 @@ public class Middleware extends ResourceManager {
         else if (rm.equalsIgnoreCase("Car") || rm.equalsIgnoreCase("Cars")) {
             try {
                 m_carResourceManager.crashResourceManager(rm, mode);
-            } catch (ConnectException e) {
+            } catch (Exception e) {
                 if (!connectServer("Car", s_carServer.host, s_carServer.port, s_carServer.name))
                     throw new RemoteException("Car Server connection timeout");
                 m_carResourceManager.crashResourceManager(rm, mode);
@@ -112,7 +112,7 @@ public class Middleware extends ResourceManager {
         else if (rm.equalsIgnoreCase("Room") || rm.equalsIgnoreCase("Rooms")) {
             try {
                 m_roomResourceManager.crashResourceManager(rm, mode);
-            } catch (ConnectException e) {
+            } catch (Exception e) {
                 if (!connectServer("Room", s_roomServer.host, s_roomServer.port, s_roomServer.name))
                     throw new RemoteException("Room Server connection timeout");
                 m_roomResourceManager.crashResourceManager(rm, mode);
@@ -250,7 +250,7 @@ public class Middleware extends ResourceManager {
         addResourceManagerUsed(id,"Flight");
         try {
             return m_flightResourceManager.addFlight(id, flightNum, flightSeats, flightPrice);
-        } catch (ConnectException e) {
+        } catch (Exception e) {
             if (!connectServer("Flight", s_flightServer.host, s_flightServer.port, s_flightServer.name))
                 throw new RemoteException("Server connection timeout");
             return m_flightResourceManager.addFlight(id, flightNum, flightSeats, flightPrice);
@@ -267,7 +267,7 @@ public class Middleware extends ResourceManager {
         addResourceManagerUsed(id,"Car");
         try {
             return m_carResourceManager.addCars(id, location, numCars, price);
-        } catch (ConnectException e) {
+        } catch (Exception e) {
             if (!connectServer("Car", s_carServer.host, s_carServer.port, s_carServer.name))
                 throw new RemoteException("Car Server connection timeout");
             return m_carResourceManager.addCars(id, location, numCars, price);
@@ -284,7 +284,7 @@ public class Middleware extends ResourceManager {
         addResourceManagerUsed(id,"Room");
         try {
             return m_roomResourceManager.addRooms(id, location, numRooms, price);
-        } catch (ConnectException e) {
+        } catch (Exception e) {
             if (!connectServer("Room", s_roomServer.host, s_roomServer.port, s_roomServer.name))
                 throw new RemoteException("Room Server connection timeout");
             return m_roomResourceManager.addRooms(id, location, numRooms, price);
@@ -302,7 +302,7 @@ public class Middleware extends ResourceManager {
         addResourceManagerUsed(id,"Flight");
         try {
             return m_flightResourceManager.deleteFlight(id, flightNum);
-        } catch (ConnectException e) {
+        } catch (Exception e) {
             if (!connectServer("Flight", s_flightServer.host, s_flightServer.port, s_flightServer.name))
                 throw new RemoteException("Flight Server connection timeout");
             return m_flightResourceManager.deleteFlight(id, flightNum);
@@ -320,7 +320,7 @@ public class Middleware extends ResourceManager {
         addResourceManagerUsed(id,"Car");
         try {
             return m_carResourceManager.deleteCars(id, location);
-        } catch (ConnectException e) {
+        } catch (Exception e) {
             if (!connectServer("Car", s_carServer.host, s_carServer.port, s_carServer.name))
                 throw new RemoteException("Car Server connection timeout");
             return m_carResourceManager.deleteCars(id, location);
@@ -338,7 +338,7 @@ public class Middleware extends ResourceManager {
         addResourceManagerUsed(id,"Room");
         try {
             return m_roomResourceManager.deleteRooms(id, location);
-        } catch (ConnectException e) {
+        } catch (Exception e) {
             if (!connectServer("Room", s_roomServer.host, s_roomServer.port, s_roomServer.name))
                 throw new RemoteException("Room Server connection timeout");
             return m_roomResourceManager.deleteRooms(id, location);
@@ -423,7 +423,7 @@ public class Middleware extends ResourceManager {
                     addResourceManagerUsed(id,"Flight");
                     try {
                         m_flightResourceManager.removeReservation(xid, customerID, reserveditem.getKey(), reserveditem.getCount());
-                    } catch (ConnectException e) {
+                    } catch (Exception e) {
                         if (!connectServer("Flight", s_flightServer.host, s_flightServer.port, s_flightServer.name)) {
                             abort(xid);
                             throw new RemoteException("Flight Server connection timeout during deletion event; abort");
@@ -435,7 +435,7 @@ public class Middleware extends ResourceManager {
                     addResourceManagerUsed(id,"Car");
                     try {
                         m_carResourceManager.removeReservation(xid, customerID, reserveditem.getKey(), reserveditem.getCount());
-                    } catch (ConnectException e) {
+                    } catch (Exception e) {
                         if (!connectServer("Car", s_carServer.host, s_carServer.port, s_carServer.name)) {
                             abort(xid);
                             throw new RemoteException("Car Server connection timeout during deletion event; abort");
@@ -447,7 +447,7 @@ public class Middleware extends ResourceManager {
                     addResourceManagerUsed(id,"Room");
                     try {
                         m_roomResourceManager.removeReservation(xid, customerID, reserveditem.getKey(), reserveditem.getCount());
-                    } catch (ConnectException e) {
+                    } catch (Exception e) {
                         if (!connectServer("Room", s_roomServer.host, s_roomServer.port, s_roomServer.name)) {
                             abort(xid);
                             throw new RemoteException("Room Server connection timeout during deletion event; abort");
@@ -476,7 +476,7 @@ public class Middleware extends ResourceManager {
         addResourceManagerUsed(id,"Flight");
         try {
             return m_flightResourceManager.queryFlight(id, flightNumber);
-        } catch (ConnectException e) {
+        } catch (Exception e) {
             if (!connectServer("Flight", s_flightServer.host, s_flightServer.port, s_flightServer.name))
                 throw new RemoteException("Flight Server connection timeout");
             return m_flightResourceManager.queryFlight(id, flightNumber);
@@ -493,7 +493,7 @@ public class Middleware extends ResourceManager {
         addResourceManagerUsed(id,"Car");
         try {
             return m_carResourceManager.queryCars(id, location);
-        } catch (ConnectException e) {
+        } catch (Exception e) {
             if (!connectServer("Car", s_carServer.host, s_carServer.port, s_carServer.name))
                 throw new RemoteException("Car Server connection timeout");
             return m_carResourceManager.queryCars(id, location);
@@ -510,7 +510,7 @@ public class Middleware extends ResourceManager {
         addResourceManagerUsed(id,"Room");
         try {
             return m_roomResourceManager.queryRooms(id, location);
-        } catch (ConnectException e) {
+        } catch (Exception e) {
             if (!connectServer("Room", s_roomServer.host, s_roomServer.port, s_roomServer.name))
                 throw new RemoteException("Room Server connection timeout");
             return m_roomResourceManager.queryRooms(id, location);
@@ -527,7 +527,7 @@ public class Middleware extends ResourceManager {
         addResourceManagerUsed(id,"Flight");
         try {
             return m_flightResourceManager.queryFlightPrice(id, flightNumber);
-        } catch (ConnectException e) {
+        } catch (Exception e) {
             if (!connectServer("Flight", s_flightServer.host, s_flightServer.port, s_flightServer.name))
                 throw new RemoteException("Flight Server connection timeout");
             return m_flightResourceManager.queryFlightPrice(id, flightNumber);
@@ -544,7 +544,7 @@ public class Middleware extends ResourceManager {
         addResourceManagerUsed(id,"Car");
         try {
             return m_carResourceManager.queryCarsPrice(id, location);
-        } catch (ConnectException e) {
+        } catch (Exception e) {
             if (!connectServer("Car", s_carServer.host, s_carServer.port, s_carServer.name))
                 throw new RemoteException("Car Server connection timeout");
             return m_carResourceManager.queryCarsPrice(id, location);
@@ -561,7 +561,7 @@ public class Middleware extends ResourceManager {
         addResourceManagerUsed(id,"Room");
         try {
             return m_roomResourceManager.queryRoomsPrice(id, location);
-        } catch (ConnectException e) {
+        } catch (Exception e) {
             if (!connectServer("Room", s_roomServer.host, s_roomServer.port, s_roomServer.name))
                 throw new RemoteException("Room Server connection timeout");
             return m_roomResourceManager.queryRoomsPrice(id, location);
@@ -591,7 +591,7 @@ public class Middleware extends ResourceManager {
         int price;
         try {
             price = m_flightResourceManager.itemsAvailable(xid, key, 1);
-        } catch (ConnectException e) {
+        } catch (Exception e) {
             if (!connectServer("Flight", s_flightServer.host, s_flightServer.port, s_flightServer.name))
                 throw new RemoteException("Flight Server connection timeout");
             price = m_flightResourceManager.itemsAvailable(xid, key, 1);
@@ -610,7 +610,7 @@ public class Middleware extends ResourceManager {
                 writeData(xid, customer.getKey(), customer);
                 return true;
             }
-        } catch (ConnectException e) {
+        } catch (Exception e) {
             if (!connectServer("Flight", s_flightServer.host, s_flightServer.port, s_flightServer.name))
                 throw new RemoteException("Flight Server connection timeout");
             if (m_flightResourceManager.reserveFlight(xid, customerID, flightNumber)) {
@@ -648,7 +648,7 @@ public class Middleware extends ResourceManager {
         int price;
         try {
             price = m_carResourceManager.itemsAvailable(xid, key, 1);
-        } catch (ConnectException e) {
+        } catch (Exception e) {
             if (!connectServer("Car", s_carServer.host, s_carServer.port, s_carServer.name))
                 throw new RemoteException("Car Server connection timeout");
             price = m_carResourceManager.itemsAvailable(xid, key, 1);
@@ -668,7 +668,7 @@ public class Middleware extends ResourceManager {
                 writeData(xid, customer.getKey(), customer);
                 return true;
             }
-        } catch (ConnectException e) {
+        } catch (Exception e) {
             if (!connectServer("Car", s_carServer.host, s_carServer.port, s_carServer.name))
                 throw new RemoteException("Car Server connection timeout");
             if (m_carResourceManager.reserveCar(xid, customerID, location)) {
@@ -706,7 +706,7 @@ public class Middleware extends ResourceManager {
         int price;
         try {
             price = m_roomResourceManager.itemsAvailable(xid, key, 1);
-        } catch (ConnectException e) {
+        } catch (Exception e) {
             if (!connectServer("Room", s_roomServer.host, s_roomServer.port, s_roomServer.name))
                 throw new RemoteException("Room Server connection timeout");
             price = m_roomResourceManager.itemsAvailable(xid, key, 1);
@@ -725,7 +725,7 @@ public class Middleware extends ResourceManager {
                 writeData(xid, customer.getKey(), customer);
                 return true;
             }
-        } catch (ConnectException e) {
+        } catch (Exception e) {
             if (!connectServer("Room", s_roomServer.host, s_roomServer.port, s_roomServer.name))
                 throw new RemoteException("Room Server connection timeout");
             if (m_roomResourceManager.reserveRoom(xid, customerID, location)) {
@@ -774,7 +774,7 @@ public class Middleware extends ResourceManager {
                 int price;
                 try {
                     price = m_flightResourceManager.itemsAvailable(xid, Flight.getKey(keyInt), countMap.get(key));
-                } catch (ConnectException e) {
+                } catch (Exception e) {
                     if (!connectServer("Flight", s_flightServer.host, s_flightServer.port, s_flightServer.name))
                         throw new RemoteException("Flight Server connection timeout");
                     price = m_flightResourceManager.itemsAvailable(xid, Flight.getKey(keyInt), countMap.get(key));
@@ -790,7 +790,7 @@ public class Middleware extends ResourceManager {
             addResourceManagerUsed(id,"Car");
             try {
                 carPrice = m_carResourceManager.itemsAvailable(xid, Car.getKey(location), 1);
-            } catch (ConnectException e) {
+            } catch (Exception e) {
                 if (!connectServer("Car", s_carServer.host, s_carServer.port, s_carServer.name))
                     throw new RemoteException("Car Server connection timeout");
                 carPrice = m_carResourceManager.itemsAvailable(xid, Car.getKey(location), 1);
@@ -804,7 +804,7 @@ public class Middleware extends ResourceManager {
             addResourceManagerUsed(id,"Room");
             try {
                 roomPrice = m_roomResourceManager.itemsAvailable(xid, Room.getKey(location), 1);
-            } catch (ConnectException e) {
+            } catch (Exception e) {
                 if (!connectServer("Room", s_roomServer.host, s_roomServer.port, s_roomServer.name))
                     throw new RemoteException("Room Server connection timeout");
                 roomPrice = m_roomResourceManager.itemsAvailable(xid, Room.getKey(location), 1);
@@ -817,7 +817,7 @@ public class Middleware extends ResourceManager {
             acquireLock(xid, Room.getKey(location), TransactionLockObject.LockType.LOCK_WRITE);
             try {
                 m_roomResourceManager.reserveRoom(xid, customerID, location);
-            } catch (ConnectException e) {
+            } catch (Exception e) {
                 if (!connectServer("Room", s_roomServer.host, s_roomServer.port, s_roomServer.name)) {
                     abort(xid);
                     throw new RemoteException("Room Server connection timeout during bundle reservations; abort");
@@ -834,7 +834,7 @@ public class Middleware extends ResourceManager {
             acquireLock(xid, Car.getKey(location), TransactionLockObject.LockType.LOCK_WRITE);
             try {
                 m_carResourceManager.reserveCar(xid, customerID, location);
-            } catch (ConnectException e) {
+            } catch (Exception e) {
                 if (!connectServer("Car", s_carServer.host, s_carServer.port, s_carServer.name)) {
                     abort(xid);
                     throw new RemoteException("Car Server connection timeout during bundle reservations; abort");
@@ -863,7 +863,7 @@ public class Middleware extends ResourceManager {
                 int price;
                 try {
                     price = m_flightResourceManager.itemsAvailable(xid, Flight.getKey(keyInt), countMap.get(key));
-                } catch (ConnectException e) {
+                } catch (Exception e) {
                     if (!connectServer("Flight", s_flightServer.host, s_flightServer.port, s_flightServer.name))
                         throw new RemoteException("Flight Server connection timeout");
                     price = m_flightResourceManager.itemsAvailable(xid, Flight.getKey(keyInt), countMap.get(key));
@@ -880,7 +880,7 @@ public class Middleware extends ResourceManager {
             addResourceManagerUsed(id,"Car");
             try {
                 carPrice = m_carResourceManager.itemsAvailable(xid, Car.getKey(location), 1);
-            } catch (ConnectException e) {
+            } catch (Exception e) {
                 if (!connectServer("Car", s_carServer.host, s_carServer.port, s_carServer.name))
                     throw new RemoteException("Car Server connection timeout");
                 carPrice = m_carResourceManager.itemsAvailable(xid, Car.getKey(location), 1);
@@ -893,7 +893,7 @@ public class Middleware extends ResourceManager {
             acquireLock(xid, Car.getKey(location), TransactionLockObject.LockType.LOCK_WRITE);
             try {
                 m_carResourceManager.reserveCar(xid, customerID, location);
-            } catch (ConnectException e) {
+            } catch (Exception e) {
                 if (!connectServer("Car", s_carServer.host, s_carServer.port, s_carServer.name)) {
                     abort(xid);
                     throw new RemoteException("Car Server connection timeout during bundle reservations; abort");
@@ -923,7 +923,7 @@ public class Middleware extends ResourceManager {
                 int price;
                 try {
                     price = m_flightResourceManager.itemsAvailable(xid, Flight.getKey(keyInt), countMap.get(key));
-                } catch (ConnectException e) {
+                } catch (Exception e) {
                     if (!connectServer("Flight", s_flightServer.host, s_flightServer.port, s_flightServer.name))
                         throw new RemoteException("Flight Server connection timeout");
                     price = m_flightResourceManager.itemsAvailable(xid, Flight.getKey(keyInt), countMap.get(key));
@@ -940,7 +940,7 @@ public class Middleware extends ResourceManager {
             addResourceManagerUsed(id,"Room");
             try {
                 roomPrice = m_roomResourceManager.itemsAvailable(xid, Room.getKey(location), 1);
-            } catch (ConnectException e) {
+            } catch (Exception e) {
                 if (!connectServer("Room", s_roomServer.host, s_roomServer.port, s_roomServer.name))
                     throw new RemoteException("Room Server connection timeout");
                 roomPrice = m_roomResourceManager.itemsAvailable(xid, Room.getKey(location), 1);
@@ -953,7 +953,7 @@ public class Middleware extends ResourceManager {
             acquireLock(xid, Room.getKey(location), TransactionLockObject.LockType.LOCK_WRITE);
             try {
                 m_roomResourceManager.reserveRoom(xid, customerID, location);
-            } catch (ConnectException e) {
+            } catch (Exception e) {
                 if (!connectServer("Room", s_roomServer.host, s_roomServer.port, s_roomServer.name)) {
                     abort(xid);
                     throw new RemoteException("Room Server connection timeout during bundle reservations; abort");
@@ -983,7 +983,7 @@ public class Middleware extends ResourceManager {
                 int price;
                 try {
                     price = m_flightResourceManager.itemsAvailable(xid, Flight.getKey(keyInt), countMap.get(key));
-                } catch (ConnectException e) {
+                } catch (Exception e) {
                     if (!connectServer("Flight", s_flightServer.host, s_flightServer.port, s_flightServer.name))
                         throw new RemoteException("Flight Server connection timeout");
                     price = m_flightResourceManager.itemsAvailable(xid, Flight.getKey(keyInt), countMap.get(key));
@@ -1010,7 +1010,7 @@ public class Middleware extends ResourceManager {
                 acquireLock(xid, Flight.getKey(key), TransactionLockObject.LockType.LOCK_WRITE);
                 try {
                     m_flightResourceManager.reserveFlight(xid, customerID, key);
-                } catch (ConnectException e) {
+                } catch (Exception e) {
                     if (!connectServer("Flight", s_flightServer.host, s_flightServer.port, s_flightServer.name)) {
                         abort(xid);
                         throw new RemoteException("Flight Server connection timeout during bundle reservations; abort");
@@ -1066,7 +1066,7 @@ public class Middleware extends ResourceManager {
                         addResourceManagerUsed(id,"Flight");
                         try {
                             summary += m_flightResourceManager.Analytics(xid, reservation, upperBound);
-                        } catch (ConnectException e) {
+                        } catch (Exception e) {
                             if (!connectServer("Flight", s_flightServer.host, s_flightServer.port, s_flightServer.name))
                                 throw new RemoteException("Flight Server connection timeout");
                             summary += m_flightResourceManager.Analytics(xid, reservation, upperBound);
@@ -1077,7 +1077,7 @@ public class Middleware extends ResourceManager {
                         addResourceManagerUsed(id,"Car");
                         try {
                             summary += m_carResourceManager.Analytics(xid, reservation, upperBound);
-                        } catch (ConnectException e) {
+                        } catch (Exception e) {
                             if (!connectServer("Car", s_carServer.host, s_carServer.port, s_carServer.name))
                                 throw new RemoteException("Car Server connection timeout");
                             summary += m_carResourceManager.Analytics(xid, reservation, upperBound);
@@ -1088,7 +1088,7 @@ public class Middleware extends ResourceManager {
                         addResourceManagerUsed(id,"Room");
                         try {
                             summary += m_roomResourceManager.Analytics(xid, reservation, upperBound);
-                        } catch (ConnectException e) {
+                        } catch (Exception e) {
                             if (!connectServer("Room", s_roomServer.host, s_roomServer.port, s_roomServer.name))
                                 throw new RemoteException("Room Server connection timeout");
                             summary += m_roomResourceManager.Analytics(xid, reservation, upperBound);
@@ -1227,57 +1227,60 @@ public class Middleware extends ResourceManager {
         }
     }
 
-    protected void addResourceManagerUsed(int xid, String resource) {
+    protected void addResourceManagerUsed(int xid, String resource) throws RemoteException {
         Transaction t = tm.readActiveData(xid);
         t.addResourceManager(resource);
 
         try {
-            try {
 
-                switch (resource) {
-                    case "Flight": {
-                        m_flightResourceManager.addTransaction(xid);
-                        break;
-                    }
-                    case "Car": {
-                        m_carResourceManager.addTransaction(xid);
-                        break;
-                    }
-                    case "Room": {
-                        m_roomResourceManager.addTransaction(xid);
-                        break;
-                    }
-                    case "Customer": {
-                        this.addTransaction(xid);
-                    }
+            switch (resource) {
+                case "Flight": {
+                    m_flightResourceManager.addTransaction(xid);
+                    break;
                 }
-
-            } catch (ConnectException e) {
-
-                switch (resource) {
-                    case "Flight": {
-                        connectServer("Flight", s_flightServer.host, s_flightServer.port, s_flightServer.name);
-                        m_flightResourceManager.addTransaction(xid);
-                        break;
-                    }
-                    case "Car": {
-                        connectServer("Car", s_carServer.host, s_carServer.port, s_carServer.name);
-                        m_carResourceManager.addTransaction(xid);
-                        break;
-                    }
-                    case "Room": {
-                        connectServer("Room", s_roomServer.host, s_roomServer.port, s_roomServer.name);
-                        m_roomResourceManager.addTransaction(xid);
-                        break;
-                    }
-                    case "Customer": {
-                        this.addTransaction(xid);
-                    }
+                case "Car": {
+                    m_carResourceManager.addTransaction(xid);
+                    break;
+                }
+                case "Room": {
+                    m_roomResourceManager.addTransaction(xid);
+                    break;
+                }
+                case "Customer": {
+                    this.addTransaction(xid);
                 }
             }
+
         } catch (Exception e) {
-            Trace.error(e.toString());
+
+            switch (resource) {
+                case "Flight": {
+                    if(connectServer("Flight", s_flightServer.host, s_flightServer.port, s_flightServer.name))
+                        m_flightResourceManager.addTransaction(xid);
+                    else
+                        throw new RemoteException("Can't connect to Flight server to add transaction");
+                    break;
+                }
+                case "Car": {
+                    if(connectServer("Car", s_carServer.host, s_carServer.port, s_carServer.name))
+                        m_carResourceManager.addTransaction(xid);
+                    else
+                        throw new RemoteException("Can't connect to Car server to add transaction");
+                    break;
+                }
+                case "Room": {
+                    if(connectServer("Room", s_roomServer.host, s_roomServer.port, s_roomServer.name))
+                        m_roomResourceManager.addTransaction(xid);
+                    else
+                        throw new RemoteException("Can't connect to Room server to add transaction");
+                    break;
+                }
+                case "Customer": {
+                    this.addTransaction(xid);
+                }
+            }
         }
+
 
     }
 

@@ -635,16 +635,24 @@ public class ResourceManager implements IResourceManager
         String name = this.mwName;
         String server = this.mwHost;
         int port = this.mwPort;
+
+		// Set the security policy
+		if (System.getSecurityManager() == null)
+		{
+			System.setSecurityManager(new SecurityManager());
+		}
         try {
             boolean first = true;
             while (true) {
                 try {
                     Registry registry = LocateRegistry.getRegistry(server, port);
+					IResourceManager mw = (IResourceManager)registry.lookup(name);
                     System.out.println("Connected to '" + name + "' server [" + server + ":" + port + "/" + name + "]");
-                    return ((IResourceManager)registry.lookup(name)).isActive(xid);
+                    return mw.isActive(xid);
                 }
                 catch (NotBoundException|RemoteException e) {
-                    loops--;
+                    System.out.println(e.toString());
+                	loops--;
                     if (loops < 0) {
                         System.out.println("Timed out waiting for '" + name + "' server [" + server + ":" + port + "/" + name + "]");
                         return false;

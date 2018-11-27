@@ -113,11 +113,16 @@ public class Logger {
         flush_to_file(this.master, this.master_f);
     }
 
+    public void lastCommitted(int xid) {
+        this.master.put("lastCommit", xid);
+        flush_to_file(this.master, this.master_f);
+    }
+
     private Set<Integer> recover_2pc() {
         Set<Integer> checked = new HashSet<Integer>();
         for (Object _key : this.master.keySet()) {
             String key = _key.toString();
-            if (key.equals("locks") || key.equals("mode"))
+            if (key.equals("locks") || key.equals("mode") || key.equals("lastCommit"))
                 continue;
 
             // deal with prepared transactions first, since these are more time pressing
@@ -131,8 +136,8 @@ public class Logger {
 
         for (Object _key : this.master.keySet()) {
             String key = _key.toString();
-            if (key.equals("locks") || key.equals("mode"))
-            continue;
+            if (key.equals("locks") || key.equals("mode") || key.equals("lastCommit"))
+                continue;
 
             // deal with non prepared transactions -> invalid transaction or aborted already
             int xid = Integer.parseInt(key);
@@ -157,6 +162,9 @@ public class Logger {
                 // decision to abort
                 try {rm.abort(key);}
                 catch(Exception e) {}
+            }
+            else {
+                Trace.info(key + " active at MW; continue");
             }
         }
     }

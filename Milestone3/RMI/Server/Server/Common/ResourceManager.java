@@ -45,6 +45,7 @@ public class ResourceManager implements IResourceManager
 	public void resetCrashes() throws RemoteException {
 		System.out.println("Resetting crash mode");
 		this.mode = 0;
+		this.log.setMode(mode);
 	}
 
 	public void crashMiddleware(int mode) throws RemoteException {

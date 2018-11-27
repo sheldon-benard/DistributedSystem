@@ -92,6 +92,7 @@ public class Logger {
     }
 
     public void setupEnv() {
+        Trace.info("setupEnv called");
         if (!initial_setup(this.master_f)) recover_master();
         if (this.master.get("mode") != null && Integer.parseInt(this.master.get("mode").toString()) == 5){
             Trace.info("Mode=" + 5 + " abort during recovery");
@@ -121,8 +122,8 @@ public class Logger {
 
             // deal with prepared transactions first, since these are more time pressing
             int xid = Integer.parseInt(key);
-            checked.add(xid);
             if (tm.xidActiveAndPrepared(xid)) {
+                checked.add(xid);
                 JSONObject obj = (JSONObject)this.master.get(key);
                 rm.recover(xid, obj.get("Prepared"), obj.get("Decision"), obj.get("MWDecision"));
             }
@@ -136,9 +137,10 @@ public class Logger {
             // deal with non prepared transactions -> invalid transaction or aborted already
             int xid = Integer.parseInt(key);
             if (checked.contains(xid)) continue;
-            checked.add(xid);
             if (!tm.xidActiveAndPrepared(xid)) {
                 JSONObject obj = (JSONObject)this.master.get(key);
+                if (obj.get("Prepared") == null) continue;
+                checked.add(xid);
                 rm.recover(xid, obj.get("Prepared"), obj.get("Decision"), obj.get("MWDecision"));
             }
         }

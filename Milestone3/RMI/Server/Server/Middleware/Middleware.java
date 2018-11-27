@@ -178,7 +178,7 @@ public class Middleware extends ResourceManager {
         if (resources.contains("Flight")) {
             try {
                 m_flightResourceManager.abort(xid);
-            } catch (ConnectException e) {
+            } catch (Exception e) {
                 if (connectServer("Flight", s_flightServer.host, s_flightServer.port, s_flightServer.name))
                     m_flightResourceManager.abort(xid);
             }
@@ -188,7 +188,7 @@ public class Middleware extends ResourceManager {
         if (resources.contains("Car")) {
             try {
                 m_carResourceManager.abort(xid);
-            } catch (ConnectException e) {
+            } catch (Exception e) {
                 if (connectServer("Car", s_carServer.host, s_carServer.port, s_carServer.name))
                     m_carResourceManager.abort(xid);
             }
@@ -197,7 +197,7 @@ public class Middleware extends ResourceManager {
         if (resources.contains("Room")) {
             try {
                 m_roomResourceManager.abort(xid);
-            } catch (ConnectException e) {
+            } catch (Exception e) {
                 if (connectServer("Room", s_roomServer.host, s_roomServer.port, s_roomServer.name))
                     m_roomResourceManager.abort(xid);
             }
@@ -1189,7 +1189,6 @@ public class Middleware extends ResourceManager {
         catch (Exception e) {
             System.err.println((char)27 + "[31;1mServer exception: " + (char)27 + "[0mUncaught exception");
             e.printStackTrace();
-            System.exit(1);
         }
         return false;
     }

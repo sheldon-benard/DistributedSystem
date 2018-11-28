@@ -190,14 +190,19 @@ public class Middleware extends ResourceManager {
             votes.add(flightVote);
         }
         else if (votes.size() >= 1) {
-            flightVote = votes.first();
+            flightVote = votes.iterator().next();
         }
         else {
             flightVote = true; // If Flight not used, say true
             votes.add(flightVote);
         }
 
-        this.log.prepare(xid, "Votes", String.join(",", votes));
+        String _votes = "";
+        Iterator<Boolean> itr = votes.iterator();
+        while (itr.hasNext())
+            _votes += Boolean.toString(itr.next());
+
+        this.log.prepare(xid, "Votes", _votes);
 
         if (resources.contains("Flight") && this.middlewareMode == 3) {
             Trace.info("Crashing Middleware: xid=" + xid + " mode=" + this.middlewareMode);
@@ -221,16 +226,21 @@ public class Middleware extends ResourceManager {
             votes.add(carVote);
         }
         else if (votes.size() >= 2) {
-            Iterator<boolean> itr = votes.iterator();
-            itr.next();
-            carVote = itr.next();
+            Iterator<Boolean> citr = votes.iterator();
+            citr.next();
+            carVote = citr.next();
         }
         else {
             carVote = true; // If car not used, say true
             votes.add(carVote);
         }
 
-        this.log.prepare(xid, "Votes", String.join(",", votes));
+        _votes = "";
+        itr = votes.iterator();
+        while (itr.hasNext())
+            _votes += Boolean.toString(itr.next());
+
+        this.log.prepare(xid, "Votes", _votes);
 
         if (resources.contains("Car") && this.middlewareMode == 3) {
             Trace.info("Crashing Middleware: xid=" + xid + " mode=" + this.middlewareMode);
@@ -255,14 +265,22 @@ public class Middleware extends ResourceManager {
             votes.add(roomVote);
         }
         else if (votes.size() == 3) {
-            roomVote = votes.last();
+            Iterator<Boolean> ritr = votes.iterator();
+            ritr.next();
+            ritr.next();
+            roomVote = ritr.next();
         }
         else {
             roomVote = true; // If room not used, say true
             votes.add(roomVote);
         }
 
-        this.log.prepare(xid, "Votes", String.join(",", votes));
+        _votes = "";
+        itr = votes.iterator();
+        while (itr.hasNext())
+            _votes += Boolean.toString(itr.next());
+
+        this.log.prepare(xid, "Votes", _votes);
 
         if (resources.contains("Room") && this.middlewareMode == 3) {
             Trace.info("Crashing Middleware: xid=" + xid + " mode=" + this.middlewareMode);

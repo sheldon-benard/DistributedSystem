@@ -601,8 +601,8 @@ public class ResourceManager implements IResourceManager
                 catch(Exception e) {}
             }
             else {
-                // decision to commit -> we must ask if still active
-                if (!askMWActive(xid)) {
+                // decision to commit -> we must ask if still active -> indefinitely
+                if (!askMWActiveIndefinitely(xid)) {
                     // abort: not active -> aborted at MW
                     try {abort(xid);}
                     catch(Exception e) {}
@@ -613,7 +613,7 @@ public class ResourceManager implements IResourceManager
         else {
 	        //Received decision from MW
             String dec = mwdecision.toString();
-			Trace.info("Recovering=" + xid + " Received decision: " + dec);
+			Trace.info("Recovering=" + xid + " Received MW decision: " + dec);
             if (dec.equals("abort")) {
                 // decision to abort
                 try {abort(xid);}
@@ -651,7 +651,7 @@ public class ResourceManager implements IResourceManager
                     return mw.isActive(xid);
                 }
                 catch (NotBoundException|RemoteException e) {
-                    System.out.println(e.toString());
+                    //System.out.println(e.toString());
                 	loops--;
                     if (loops < 0) {
                         System.out.println("Timed out waiting for '" + name + "' server [" + server + ":" + port + "/" + name + "]");
@@ -671,6 +671,42 @@ public class ResourceManager implements IResourceManager
         }
         return false;
     }
+
+	public boolean askMWActiveIndefinitely(int xid) {
+		int wait = 2000;
+		String name = this.mwName;
+		String server = this.mwHost;
+		int port = this.mwPort;
+
+		// Set the security policy
+		if (System.getSecurityManager() == null)
+		{
+			System.setSecurityManager(new SecurityManager());
+		}
+		try {
+			boolean first = true;
+			while (true) {
+				try {
+					Registry registry = LocateRegistry.getRegistry(server, port);
+					IResourceManager mw = (IResourceManager)registry.lookup(name);
+					System.out.println("Connected to '" + name + "' server [" + server + ":" + port + "/" + name + "]");
+					return mw.isActive(xid);
+				}
+				catch (NotBoundException|RemoteException e) {
+					if (first) {
+						System.out.println("Waiting for '" + name + "' server [" + server + ":" + port + "/" + name + "]");
+						first = false;
+					}
+				}
+				Thread.sleep(wait);
+			}
+		}
+		catch (Exception e) {
+			System.err.println((char)27 + "[31;1mServer exception: " + (char)27 + "[0mUncaught exception");
+			e.printStackTrace();
+		}
+		return false;
+	}
 
 	public void abort(int xid) throws RemoteException, InvalidTransactionException {
 		System.out.println("Abort transaction:" + xid);

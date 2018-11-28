@@ -136,14 +136,210 @@ public class Middleware extends ResourceManager {
 
         Trace.info("Resource=" + resources);
 
-        if (resources.contains("Flight"))
-            m_flightResourceManager.commit(xid);
+        // Prepare transaction
+        this.log.prepare(xid, "Prepared", "Prepared");
+        t.setIsPrepared(true);
 
-        if (resources.contains("Car"))
-            m_carResourceManager.commit(xid);
+        if (this.middlewareMode == 1) {
+            Trace.info("Crashing Middleware: xid=" + xid + " mode=" + this.middlewareMode);
+            Trace.info("Crashing before sending vote");
+            System.exit(1);
+        }
 
-        if (resources.contains("Room"))
-            m_roomResourceManager.commit(xid);
+        if (this.middlewareMode == 2) {
+            Trace.info("Crashing Middleware: xid=" + xid + " mode=" + this.middlewareMode);
+            new Thread(){
+                public void run(){
+                    try {
+                        if (resources.contains("Flight"))
+                            m_flightResourceManager.prepare(xid);
+                    } catch(Exception e){}
+                    try {
+                        if (resources.contains("Car"))
+                            m_carResourceManager.prepare(xid);
+                    } catch(Exception e){}
+                    try {
+                        if (resources.contains("Room"))
+                            m_roomResourceManager.prepare(xid);
+                    } catch(Exception e){}
+                    System.exit(1);
+                }
+            }.start();
+            try {
+                Thread.sleep(750);
+            } catch(Exception e){}
+            Trace.info("Crashing after sending request, before replies");
+            System.exit(1);
+        }
+
+        Set<Boolean> votes = t.getVotes();
+        boolean flightVote, carVote, roomVote;
+
+        if (resources.contains("Flight") && votes.size() < 1) {
+            try {
+                flightVote = m_flightResourceManager.prepare(xid);
+            } catch (Exception e) {
+                if (!connectServer("Flight", s_flightServer.host, s_flightServer.port, s_flightServer.name)) {
+                    Trace.info("Flight Server connection timeout - vote false");
+                    flightVote = false;
+                } else {
+                    flightVote = m_flightResourceManager.prepare(xid);
+                }
+            }
+            Trace.info("Flight Server vote:" + flightVote);
+            votes.add(flightVote);
+        }
+        else if (votes.size() >= 1) {
+            flightVote = votes.first();
+        }
+        else {
+            flightVote = true; // If Flight not used, say true
+            votes.add(flightVote);
+        }
+
+        this.log.prepare(xid, "Votes", String.join(",", votes));
+
+        if (resources.contains("Flight") && this.middlewareMode == 3) {
+            Trace.info("Crashing Middleware: xid=" + xid + " mode=" + this.middlewareMode);
+            Trace.info("Crashing after receiving flight vote");
+            System.exit(1);
+        }
+
+        if (resources.contains("Car")  && votes.size() < 2) {
+            try {
+                carVote = m_carResourceManager.prepare(xid);
+            } catch (Exception e) {
+                if (!connectServer("Car", s_carServer.host, s_carServer.port, s_carServer.name)) {
+                    Trace.info("Car Server connection timeout - vote false");
+                    carVote = false;
+                }
+                else {
+                    carVote = m_carResourceManager.prepare(xid);
+                }
+            }
+            Trace.info("Car Server vote:" + carVote);
+            votes.add(carVote);
+        }
+        else if (votes.size() >= 2) {
+            Iterator<boolean> itr = votes.iterator();
+            itr.next();
+            carVote = itr.next();
+        }
+        else {
+            carVote = true; // If car not used, say true
+            votes.add(carVote);
+        }
+
+        this.log.prepare(xid, "Votes", String.join(",", votes));
+
+        if (resources.contains("Car") && this.middlewareMode == 3) {
+            Trace.info("Crashing Middleware: xid=" + xid + " mode=" + this.middlewareMode);
+            Trace.info("Crashing after receiving car vote");
+            System.exit(1);
+        }
+
+
+        if (resources.contains("Room") && votes.size() < 3) {
+            try {
+                roomVote = m_roomResourceManager.prepare(xid);
+            } catch (Exception e) {
+                if (!connectServer("Room", s_roomServer.host, s_roomServer.port, s_roomServer.name)) {
+                    Trace.info("Room Server connection timeout - vote false");
+                    roomVote = false;
+                }
+                else {
+                    roomVote = m_roomResourceManager.prepare(xid);
+                }
+            }
+            Trace.info("Room Server vote:" + roomVote);
+            votes.add(roomVote);
+        }
+        else if (votes.size() == 3) {
+            roomVote = votes.last();
+        }
+        else {
+            roomVote = true; // If room not used, say true
+            votes.add(roomVote);
+        }
+
+        this.log.prepare(xid, "Votes", String.join(",", votes));
+
+        if (resources.contains("Room") && this.middlewareMode == 3) {
+            Trace.info("Crashing Middleware: xid=" + xid + " mode=" + this.middlewareMode);
+            Trace.info("Crashing after receiving room vote");
+            System.exit(1);
+        }
+
+        if (this.middlewareMode == 4) {
+            Trace.info("Crashing Middleware: xid=" + xid + " mode=" + this.middlewareMode);
+            Trace.info("Crashing after receiving all votes");
+            System.exit(1);
+        }
+
+        boolean decision = !votes.contains(false);
+
+        if (this.middlewareMode == 5) {
+            Trace.info("Crashing Middleware: xid=" + xid + " mode=" + this.middlewareMode);
+            Trace.info("Crashing after receiving making decision = " + decision);
+            System.exit(1);
+        }
+
+        if (!decision) {
+            abort(xid);
+            if (this.middlewareMode == 7) {
+                Trace.info("Crashing Middleware: xid=" + xid + " mode=" + this.middlewareMode);
+                Trace.info("Crashing after sending all abort messages");
+                System.exit(1);
+            }
+            return false;
+        }
+
+
+        if (resources.contains("Flight")) {
+            try {
+                m_flightResourceManager.commit(xid);
+            }
+            catch (InvalidTransactionException e) {
+                Trace.info(xid + " already committed at flight rm");
+            }
+            catch (Exception e) {
+                if (connectServerIndefinitely("Flight", s_flightServer.host, s_flightServer.port, s_flightServer.name))
+                    m_flightResourceManager.commit(xid);
+            }
+        }
+
+        if (this.middlewareMode == 6) {
+            Trace.info("Crashing Middleware: xid=" + xid + " mode=" + this.middlewareMode);
+            Trace.info("Crashing after sending some commit messages");
+            System.exit(1);
+        }
+
+        if (resources.contains("Car")) {
+            try {
+                m_carResourceManager.commit(xid);
+            }
+            catch (InvalidTransactionException e) {
+                Trace.info(xid + " already committed at car rm");
+            }
+            catch (Exception e) {
+                if (connectServer("Car", s_carServer.host, s_carServer.port, s_carServer.name))
+                    m_carResourceManager.commit(xid);
+            }
+        }
+
+        if (resources.contains("Room")) {
+            try {
+                m_roomResourceManager.commit(xid);
+            }
+            catch (InvalidTransactionException e) {
+                Trace.info(xid + " already committed at room rm");
+            }
+            catch (Exception e) {
+                if (connectServer("Room", s_roomServer.host, s_roomServer.port, s_roomServer.name))
+                    m_roomResourceManager.commit(xid);
+            }
+        }
+
 
         if (resources.contains("Customer")) {
 
@@ -161,6 +357,13 @@ public class Middleware extends ResourceManager {
         this.flush_committed();
         this.flush_in_progress();
         this.log.lastCommitted(xid);
+        this.log.removePrepared(xid);
+
+        if (this.middlewareMode == 7) {
+            Trace.info("Crashing Middleware: xid=" + xid + " mode=" + this.middlewareMode);
+            Trace.info("Crashing after sending all commit messages");
+            System.exit(1);
+        }
         return true;
     }
 
@@ -179,17 +382,30 @@ public class Middleware extends ResourceManager {
         if (resources.contains("Flight")) {
             try {
                 m_flightResourceManager.abort(xid);
-            } catch (Exception e) {
+            }
+            catch (InvalidTransactionException e) {
+                Trace.info(xid + " already aborted at flight rm");
+            }
+            catch (Exception e) {
                 if (connectServer("Flight", s_flightServer.host, s_flightServer.port, s_flightServer.name))
                     m_flightResourceManager.abort(xid);
             }
         }
 
+        if (this.middlewareMode == 6) {
+            Trace.info("Crashing Middleware: xid=" + xid + " mode=" + this.middlewareMode);
+            Trace.info("Crashing after sending some abort messages");
+            System.exit(1);
+        }
 
         if (resources.contains("Car")) {
             try {
                 m_carResourceManager.abort(xid);
-            } catch (Exception e) {
+            }
+            catch (InvalidTransactionException e) {
+                Trace.info(xid + " already aborted at car rm");
+            }
+            catch (Exception e) {
                 if (connectServer("Car", s_carServer.host, s_carServer.port, s_carServer.name))
                     m_carResourceManager.abort(xid);
             }
@@ -198,13 +414,18 @@ public class Middleware extends ResourceManager {
         if (resources.contains("Room")) {
             try {
                 m_roomResourceManager.abort(xid);
-            } catch (Exception e) {
+            }
+            catch (InvalidTransactionException e) {
+                Trace.info(xid + " already aborted at room rm");
+            }
+            catch (Exception e) {
                 if (connectServer("Room", s_roomServer.host, s_roomServer.port, s_roomServer.name))
                     m_roomResourceManager.abort(xid);
             }
         }
         endTransaction(xid, false);
         this.flush_in_progress();
+        this.log.removePrepared(xid);
     }
 
     private void endTransaction(int xid, boolean commit) {
@@ -1195,6 +1416,48 @@ public class Middleware extends ResourceManager {
                         System.out.println("Timed out waiting for '" + name + "' server [" + server + ":" + port + "/" + name + "]");
                         return false;
                     }
+                    if (first) {
+                        System.out.println("Waiting for '" + name + "' server [" + server + ":" + port + "/" + name + "]");
+                        first = false;
+                    }
+                }
+                Thread.sleep(wait);
+            }
+        }
+        catch (Exception e) {
+            System.err.println((char)27 + "[31;1mServer exception: " + (char)27 + "[0mUncaught exception");
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    protected boolean connectServerIndefinitely(String type, String server, int port, String name)
+    {
+        int wait = 5000;
+        try {
+            boolean first = true;
+            while (true) {
+                try {
+                    Registry registry = LocateRegistry.getRegistry(server, port);
+
+                    switch(type) {
+                        case "Flight": {
+                            m_flightResourceManager = (IResourceManager)registry.lookup(name);
+                            break;
+                        }
+                        case "Car": {
+                            m_carResourceManager = (IResourceManager)registry.lookup(name);
+                            break;
+                        }
+                        case "Room": {
+                            m_roomResourceManager = (IResourceManager)registry.lookup(name);
+                            break;
+                        }
+                    }
+                    System.out.println("Connected to '" + name + "' server [" + server + ":" + port + "/" + name + "]");
+                    return true;
+                }
+                catch (NotBoundException|RemoteException e) {
                     if (first) {
                         System.out.println("Waiting for '" + name + "' server [" + server + ":" + port + "/" + name + "]");
                         first = false;

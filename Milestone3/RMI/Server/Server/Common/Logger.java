@@ -106,6 +106,32 @@ public class Logger {
             Set<Integer> checked = recover_2pc();
             recover_Transactions(checked);
         }
+        else {
+            recover_middleware();
+        }
+    }
+
+    private void recover_middleware() {
+        for (Object _key : this.master.keySet()) {
+            String key = _key.toString();
+            if (key.equals("locks") || key.equals("mode") || key.equals("lastCommit"))
+                continue;
+
+            // deal with prepared transactions first, since these are more time pressing
+            int xid = Integer.parseInt(key);
+            if (tm.xidActive(xid)) {
+                JSONObject obj = (JSONObject)this.master.get(key);
+                if (obj.get("Prepared") == null) continue;
+                if (obj.get("Votes") != null) {
+                    String[] votes = obj.get("Votes").split(",");
+                    for (String vote : votes) {
+                        boolean v = Boolean.parseBoolean(vote);
+                        tm.readActiveData(xid).getVotes().add(v);
+                    }
+                }
+                rm.commit(xid);
+            }
+        }
     }
 
     public void removePrepared(int xid) {

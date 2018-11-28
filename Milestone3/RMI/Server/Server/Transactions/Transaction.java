@@ -13,6 +13,8 @@ public class Transaction {
     private int timeToLive; // in milliseconds
     private boolean isPrepared = false;
 
+    private Set<Boolean> votes = new HashSet<Boolean>();
+
     public boolean getIsPrepared() {return this.isPrepared;}
     public void setIsPrepared(boolean a) {this.isPrepared = a;}
 
@@ -20,6 +22,10 @@ public class Transaction {
     public Transaction (int xid, int timeToLive) {
         this.xid = xid;
         this.timeToLive = timeToLive * 1000;
+    }
+
+    public Set<Boolean> getVotes() {
+        return this.votes;
     }
 
     public Transaction (int xid) {

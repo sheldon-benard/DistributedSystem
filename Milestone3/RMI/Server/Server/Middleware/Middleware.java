@@ -321,7 +321,7 @@ public class Middleware extends ResourceManager {
                 Trace.info(xid + " already committed at flight rm");
             }
             catch (Exception e) {
-                if (connectServerIndefinitely("Flight", s_flightServer.host, s_flightServer.port, s_flightServer.name))
+                if (connectServer("Flight", s_flightServer.host, s_flightServer.port, s_flightServer.name))
                     m_flightResourceManager.commit(xid);
             }
         }
@@ -1402,7 +1402,8 @@ public class Middleware extends ResourceManager {
 
     protected boolean connectServer(String type, String server, int port, String name)
     {
-        int waitTime = 30 * 1000; // ms
+        //int waitTime = 30 * 1000; // ms
+        int waitTime = 5 * 1000; // ms
         int wait = 500;
         int loops = waitTime / wait;
         try {
@@ -1492,7 +1493,22 @@ public class Middleware extends ResourceManager {
     }
 
     public boolean isActive(int xid) throws RemoteException {
+        Trace.info("isActive(" + xid + ") ==" + tm.xidActive(xid));
         return tm.xidActive(xid);
+    }
+
+    public boolean getMWDecision(int xid) throws RemoteException {
+        if (!tm.xidActive(xid))
+            return tm.xidCommitted(xid);
+        Transaction t = tm.readActiveData(xid);
+        Set<Boolean> votes = t.getVotes();
+        while (tm.xidActive(xid) && votes.size() != 3) {
+            try{Thread.sleep(500);}
+            catch(Exception e){}
+        }
+        if (!tm.xidActive(xid))
+            return tm.xidCommitted(xid);
+        return !votes.contains(false);
     }
 
     protected void checkTransaction(int xid) throws TransactionAbortedException, InvalidTransactionException{

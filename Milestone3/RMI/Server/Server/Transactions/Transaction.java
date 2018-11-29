@@ -34,7 +34,7 @@ public class Transaction {
 
     public boolean expired() {
         long time = (new Date()).getTime();
-        if (time > lastAction + timeToLive)
+        if (time > lastAction + timeToLive && !isPrepared) // don't expire if in 2pc!
             return true;
         return false;
     }

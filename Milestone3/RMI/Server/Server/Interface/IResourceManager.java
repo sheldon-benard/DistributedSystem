@@ -45,6 +45,7 @@ public interface IResourceManager extends Remote
     public boolean prepare(int xid) throws RemoteException,TransactionAbortedException, InvalidTransactionException;
 
     public boolean isActive(int xid) throws RemoteException;
+    public boolean getMWDecision(int xid) throws RemoteException;
 
     /**
      * Abort transaction

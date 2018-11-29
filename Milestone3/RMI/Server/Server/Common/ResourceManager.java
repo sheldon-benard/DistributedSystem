@@ -104,12 +104,13 @@ public class ResourceManager implements IResourceManager
             new Thread(){
                 public void run(){
                     try {
-                        Thread.sleep(1000);
+                        Thread.sleep(500);
                     } catch(Exception e){}
                     System.exit(1);
                 }
             }.start();
         }
+		this.log.prepare(xid, "Sent", "Sent");
         return d;
     }
 
@@ -534,6 +535,9 @@ public class ResourceManager implements IResourceManager
 
 	public boolean commit(int xid) throws RemoteException,TransactionAbortedException, InvalidTransactionException
 	{
+		if (this.mode == 3) {
+			System.exit(1);
+		}
 		System.out.println("Commit transaction:" + xid);
 		this.log.prepare(xid,"MWDecision", "commit");
 
@@ -573,7 +577,7 @@ public class ResourceManager implements IResourceManager
 		log.flush_in_progress();
 	}
 
-	public void recover(int xid, Object prepared, Object decision, Object mwdecision) {
+	public void recover(int xid, Object prepared, Object decision, Object sent, Object mwdecision) {
 	    if (prepared == null) {
             return; // prepared should never be null
         }
@@ -586,12 +590,42 @@ public class ResourceManager implements IResourceManager
                 try {abort(xid);}
                 catch(Exception e) {}
             }
-            // Else, continue  with recover, the MW is trying to reconnect
+            else {
+				// Else, continue  with recover, the MW is trying to reconnect
+				Trace.info("Recovering=" + xid + " Transaction still active at MW");
+			}
         }
+        else if (sent == null) {
+			// So decision != null
+			String dec = decision.toString();
+			Trace.info("Recovering=" + xid + " Made decision but did not send: " + dec);
+			if (dec.equals("InvalidTransactionException")){
+				// Nothing to do, as transaction doesn't exist
+				return;
+			}
+			else if (dec.equals("abort")) {
+				// decision to abort
+				try {abort(xid);}
+				catch(Exception e) {}
+			}
+			else {
+				// May still be active
+				if (!askMWActive(xid)) {
+					// abort: not active -> aborted at MW
+					Trace.info("Recovering=" + xid + " Abort xid");
+					try {abort(xid);}
+					catch(Exception e) {}
+				}
+				else {
+					// Else, continue  with recover, the MW is trying to reconnect
+					Trace.info("Recovering=" + xid + " Transaction still active at MW");
+				}
+			}
+		}
         else if (mwdecision == null) {
 	        // So decision != null
             String dec = decision.toString();
-            Trace.info("Recovering=" + xid + " Made decision but did not send: " + dec);
+            Trace.info("Recovering=" + xid + " Made decision and sent it: " + dec);
             if (dec.equals("InvalidTransactionException")){
                 // Nothing to do, as transaction doesn't exist
                 return;
@@ -603,12 +637,22 @@ public class ResourceManager implements IResourceManager
             }
             else {
                 // decision to commit -> we must ask if still active -> indefinitely
-                if (!askMWActiveIndefinitely(xid)) {
-                    // abort: not active -> aborted at MW
-                    try {abort(xid);}
-                    catch(Exception e) {}
-                }
-                // Else, continue  with recover, the MW is trying to reconnect
+				Trace.info("Either prepare is being called right now, or commit is still running on the middleware");
+				Trace.info("So: run a thread asking for MWDecision AND continue with making the stub available");
+				new Thread(){
+					public void run(){
+						if (!askMWDecisionIndefinitely(xid)) {
+							try { abort(xid); }
+							catch (Exception e) { }
+						}
+						else {
+							try { commit(xid); }
+							catch (Exception e) { }
+						}
+					}
+				}.start();
+
+                // However, MW could still be trying to reconnect, so start thread
             }
         }
         else {
@@ -627,10 +671,12 @@ public class ResourceManager implements IResourceManager
             }
         }
     }
-    public boolean isActive(int xid) throws RemoteException {return false;}
+    public boolean getMWDecision(int xid) throws RemoteException {return false;}
+	public boolean isActive(int xid) throws RemoteException {return false;}
 
     public boolean askMWActive(int xid) {
-        int waitTime = 30 * 1000; // ms
+        //int waitTime = 30 * 1000; // ms
+		int waitTime = 5 * 1000; // ms
         int wait = 200;
         int loops = waitTime / wait;
         String name = this.mwName;
@@ -649,7 +695,9 @@ public class ResourceManager implements IResourceManager
                     Registry registry = LocateRegistry.getRegistry(server, port);
 					IResourceManager mw = (IResourceManager)registry.lookup(name);
                     System.out.println("Connected to '" + name + "' server [" + server + ":" + port + "/" + name + "]");
-                    return mw.isActive(xid);
+                    boolean result = mw.isActive(xid);
+                    Trace.info("isActive(" + xid + ")==" + result);
+                    return result;
                 }
                 catch (NotBoundException|RemoteException e) {
                     //System.out.println(e.toString());
@@ -667,13 +715,13 @@ public class ResourceManager implements IResourceManager
             }
         }
         catch (Exception e) {
-            System.err.println((char)27 + "[31;1mServer exception: " + (char)27 + "[0mUncaught exception");
+            System.err.println((char)27 + "[31;1mServer exception: " + (char)27 + "[0mUncaught exception in askMWActive");
             e.printStackTrace();
         }
         return false;
     }
 
-	public boolean askMWActiveIndefinitely(int xid) {
+	public boolean askMWDecisionIndefinitely(int xid) {
 		int wait = 2000;
 		String name = this.mwName;
 		String server = this.mwHost;
@@ -691,7 +739,7 @@ public class ResourceManager implements IResourceManager
 					Registry registry = LocateRegistry.getRegistry(server, port);
 					IResourceManager mw = (IResourceManager)registry.lookup(name);
 					System.out.println("Connected to '" + name + "' server [" + server + ":" + port + "/" + name + "]");
-					return mw.isActive(xid);
+					return mw.getMWDecision(xid);
 				}
 				catch (NotBoundException|RemoteException e) {
 					if (first) {
@@ -710,6 +758,9 @@ public class ResourceManager implements IResourceManager
 	}
 
 	public void abort(int xid) throws RemoteException, InvalidTransactionException {
+		if (this.mode == 3) {
+			System.exit(1);
+		}
 		System.out.println("Abort transaction:" + xid);
         this.log.prepare(xid,"MWDecision", "abort");
 

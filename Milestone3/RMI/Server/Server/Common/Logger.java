@@ -94,13 +94,16 @@ public class Logger {
 
     public void setupEnv() {
         Trace.info("setupEnv called");
+        Trace.info(this.master_f);
         if (!initial_setup(this.master_f)) recover_master();
         if (this.master.get("mode") != null && Integer.parseInt(this.master.get("mode").toString()) == 5){
             Trace.info("Mode=" + 5 + " abort during recovery");
             setMode(0);
             System.exit(1);
         }
+        Trace.info(this.getCommitted_f());
         if (!initial_setup(this.getCommitted_f())) recover_committed();
+        Trace.info(this.in_progress_f);
         if (!initial_setup(this.in_progress_f)) recover_in_progress();
 
         if (!this.name.equals("Middleware")) {
@@ -136,7 +139,7 @@ public class Logger {
     }
 
     public void removePrepared(int xid) {
-        this.master.remove(xid);
+        this.master.remove(String.valueOf(xid));
         flush_to_file(this.master, this.master_f);
     }
 
@@ -159,7 +162,12 @@ public class Logger {
 
     private Set<Integer> recover_2pc() {
         Set<Integer> checked = new HashSet<Integer>();
+        Set<Object> keySet = new HashSet<Object>();
         for (Object _key : this.master.keySet()) {
+            keySet.add(_key);
+        }
+
+        for (Object _key : keySet) {
             String key = _key.toString();
             if (key.equals("locks") || key.equals("mode") || key.equals("lastCommit"))
                 continue;
@@ -169,11 +177,12 @@ public class Logger {
             if (tm.xidActiveAndPrepared(xid)) {
                 checked.add(xid);
                 JSONObject obj = (JSONObject)this.master.get(key);
-                rm.recover(xid, obj.get("Prepared"), obj.get("Decision"), obj.get("MWDecision"));
+                rm.recover(xid, obj.get("Prepared"), obj.get("Decision"), obj.get("Sent"), obj.get("MWDecision"));
             }
         }
 
-        for (Object _key : this.master.keySet()) {
+
+        for (Object _key : keySet) {
             String key = _key.toString();
             if (key.equals("locks") || key.equals("mode") || key.equals("lastCommit"))
                 continue;
@@ -185,7 +194,7 @@ public class Logger {
                 JSONObject obj = (JSONObject)this.master.get(key);
                 if (obj.get("Prepared") == null) continue;
                 checked.add(xid);
-                rm.recover(xid, obj.get("Prepared"), obj.get("Decision"), obj.get("MWDecision"));
+                rm.recover(xid, obj.get("Prepared"), obj.get("Decision"), obj.get("Sent"), obj.get("MWDecision"));
             }
         }
         return checked;
@@ -479,7 +488,9 @@ public class Logger {
 
     }
 
-    public void prepare(int xid, String state, String data){
+    public void prepare(int _xid, String state, String data){
+        String xid = String.valueOf(_xid);
+
         if (this.master.get(xid) == null)
             this.master.put(xid, new JSONObject());
         ((JSONObject)this.master.get(xid)).put(state, data);
@@ -494,13 +505,14 @@ public class Logger {
 
     private void recover_master() {
         //this.in_progress is file object
-        JSONObject obj = this.master;
-
-        if (obj.toString().equals("{}")) {
+        if (this.master.get("locks") == null)
             this.master.put("locks",new JSONObject());
+
+        if (this.master.get("lastCommit") == null)
             this.master.put("lastCommit",0);
+
+        if (this.master.get("mode") == null)
             this.master.put("mode",0);
-        };
     }
 
 //    public void write_committed(int xid) throws InvalidTransactionException{
@@ -525,17 +537,15 @@ public class Logger {
 
             JSONObject jsonObject = (JSONObject) obj;
 
-            if (file.contains("committed.json"))
+            if (file.contains("committed") && file.contains(".json"))
                 this.committed = jsonObject;
             else if (file.contains("in-progress.json"))
                 this.in_progress = jsonObject;
             else if (file.contains("master.json")) {
                 this.master = jsonObject;
-                if (this.master.get("locks") == null)
-                    this.master.put("locks", new JSONObject());
             }
             else {
-                Trace.error("Unknown file");
+                Trace.error("Unknown file=" + file);
                 System.exit(-1);
             }
             Trace.info(file + " found: Recovery process initiated");
@@ -544,7 +554,7 @@ public class Logger {
         } catch (FileNotFoundException e) {
             JSONObject o = new JSONObject();
             Trace.info(file + " not found: creating log file");
-            if (file.contains("committed.json")) {
+            if (file.contains("committed") && file.contains(".json")) {
                 this.committed = new JSONObject();
                 flush_to_file(o, this.getCommitted_f());
             }
@@ -557,10 +567,10 @@ public class Logger {
                 this.master.put("locks", new JSONObject());
                 this.master.put("lastCommit", 0);
                 this.master.put("mode",0);
-                flush_to_file(o, this.master_f);
+                flush_to_file(this.master, this.master_f);
             }
             else {
-                Trace.error("Unknown file");
+                Trace.error("Unknown file=" + file);
                 System.exit(-1);
             }
         } catch (IOException e) {

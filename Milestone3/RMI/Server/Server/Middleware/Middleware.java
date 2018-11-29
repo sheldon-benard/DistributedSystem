@@ -401,14 +401,14 @@ public class Middleware extends ResourceManager {
 
         if (resources.contains("Flight")) {
             try {
-                m_flightResourceManager.abort(xid);
-            }
-            catch (InvalidTransactionException e) {
-                Trace.info(xid + " already aborted at flight rm");
-            }
-            catch (Exception e) {
-                if (connectServer("Flight", s_flightServer.host, s_flightServer.port, s_flightServer.name))
+                try {
                     m_flightResourceManager.abort(xid);
+                } catch (Exception e) {
+                    if (connectServer("Flight", s_flightServer.host, s_flightServer.port, s_flightServer.name))
+                        m_flightResourceManager.abort(xid);
+                }
+            } catch(Exception e) {
+                Trace.info(xid + " already aborted at flight rm");
             }
         }
 
@@ -420,29 +420,32 @@ public class Middleware extends ResourceManager {
 
         if (resources.contains("Car")) {
             try {
-                m_carResourceManager.abort(xid);
-            }
-            catch (InvalidTransactionException e) {
-                Trace.info(xid + " already aborted at car rm");
-            }
-            catch (Exception e) {
-                if (connectServer("Car", s_carServer.host, s_carServer.port, s_carServer.name))
+                try {
                     m_carResourceManager.abort(xid);
+                }
+                catch (Exception e) {
+                    if (connectServer("Car", s_carServer.host, s_carServer.port, s_carServer.name))
+                        m_carResourceManager.abort(xid);
+                }
+            } catch(Exception e) {
+                Trace.info(xid + " already aborted at car rm");
             }
         }
 
         if (resources.contains("Room")) {
             try {
-                m_roomResourceManager.abort(xid);
-            }
-            catch (InvalidTransactionException e) {
+                try {
+                    m_roomResourceManager.abort(xid);
+                }
+                catch (Exception e) {
+                    if (connectServer("Room", s_roomServer.host, s_roomServer.port, s_roomServer.name))
+                        m_roomResourceManager.abort(xid);
+                }
+            } catch(Exception e) {
                 Trace.info(xid + " already aborted at room rm");
             }
-            catch (Exception e) {
-                if (connectServer("Room", s_roomServer.host, s_roomServer.port, s_roomServer.name))
-                    m_roomResourceManager.abort(xid);
-            }
         }
+
         endTransaction(xid, false);
         this.flush_in_progress();
         this.log.removePrepared(xid);

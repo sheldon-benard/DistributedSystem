@@ -126,14 +126,16 @@ public class Logger {
                 JSONObject obj = (JSONObject)this.master.get(key);
                 if (obj.get("Prepared") == null) continue;
                 if (obj.get("Votes") != null) {
+                    //System.out.println(obj.get("Votes").toString());
                     String[] votes = obj.get("Votes").toString().split(",");
                     for (String vote : votes) {
+                        if (vote.equals("")) continue;
                         boolean v = Boolean.parseBoolean(vote);
                         tm.readActiveData(xid).getVotes().add(v);
                     }
                 }
-                try { rm.commit(xid); }
-                catch (Exception e) {}
+//                try { rm.commit(xid); }
+//                catch (Exception e) {}
             }
         }
     }

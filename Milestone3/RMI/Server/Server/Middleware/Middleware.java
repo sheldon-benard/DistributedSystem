@@ -47,6 +47,17 @@ public class Middleware extends ResourceManager {
                     acquireLock(Integer.parseInt(locks[0]), locks[1], TransactionLockObject.LockType.LOCK_READ);
             } catch(Exception e){System.out.println(e.getLocalizedMessage());}
         }
+        // Recommit prepared
+        Set<Integer> xids = new HashSet<Integer>();
+        HashMap<Integer, Transaction> activeTransactions = tm.getActiveData();
+        for (Integer xid : activeTransactions.keySet())
+            xids.add(xid);
+        for (Integer xid : xids) {
+            if (tm.xidActiveAndPrepared(xid)) {
+                try { commit(xid); }
+                catch (Exception e) { System.out.println(e.toString()); }
+            }
+        }
     }
 
     public int start() throws RemoteException{
@@ -127,7 +138,7 @@ public class Middleware extends ResourceManager {
     public boolean commit(int xid) throws RemoteException,TransactionAbortedException, InvalidTransactionException
     {
         int id = xid;
-        System.out.print("Commit transaction:" + xid);
+        System.out.println("Commit transaction:" + xid);
 
         checkTransaction(id);
         Transaction t = tm.readActiveData(xid);
@@ -139,6 +150,7 @@ public class Middleware extends ResourceManager {
         // Prepare transaction
         this.log.prepare(xid, "Prepared", "Prepared");
         t.setIsPrepared(true);
+        this.flush_in_progress();
 
         if (this.middlewareMode == 1) {
             Trace.info("Crashing Middleware: xid=" + xid + " mode=" + this.middlewareMode);
@@ -162,7 +174,6 @@ public class Middleware extends ResourceManager {
                         if (resources.contains("Room"))
                             m_roomResourceManager.prepare(xid);
                     } catch(Exception e){}
-                    System.exit(1);
                 }
             }.start();
             try {
@@ -172,7 +183,9 @@ public class Middleware extends ResourceManager {
             System.exit(1);
         }
 
-        Set<Boolean> votes = t.getVotes();
+        List<Boolean> votes = t.getVotes();
+        //Trace.info("Already have "  + votes.size() + " votes");
+
         boolean flightVote, carVote, roomVote;
 
         if (resources.contains("Flight") && votes.size() < 1) {
@@ -190,7 +203,7 @@ public class Middleware extends ResourceManager {
             votes.add(flightVote);
         }
         else if (votes.size() >= 1) {
-            flightVote = votes.iterator().next();
+            flightVote = votes.get(0);
         }
         else {
             flightVote = true; // If Flight not used, say true
@@ -198,9 +211,7 @@ public class Middleware extends ResourceManager {
         }
 
         String _votes = "";
-        Iterator<Boolean> itr = votes.iterator();
-        while (itr.hasNext())
-            _votes += Boolean.toString(itr.next());
+        _votes += Boolean.toString(votes.get(0)) + ",";
 
         this.log.prepare(xid, "Votes", _votes);
 
@@ -226,19 +237,14 @@ public class Middleware extends ResourceManager {
             votes.add(carVote);
         }
         else if (votes.size() >= 2) {
-            Iterator<Boolean> citr = votes.iterator();
-            citr.next();
-            carVote = citr.next();
+            carVote = votes.get(1);
         }
         else {
             carVote = true; // If car not used, say true
             votes.add(carVote);
         }
 
-        _votes = "";
-        itr = votes.iterator();
-        while (itr.hasNext())
-            _votes += Boolean.toString(itr.next());
+        _votes += Boolean.toString(votes.get(1)) + ",";
 
         this.log.prepare(xid, "Votes", _votes);
 
@@ -265,20 +271,14 @@ public class Middleware extends ResourceManager {
             votes.add(roomVote);
         }
         else if (votes.size() == 3) {
-            Iterator<Boolean> ritr = votes.iterator();
-            ritr.next();
-            ritr.next();
-            roomVote = ritr.next();
+            roomVote = votes.get(2);
         }
         else {
             roomVote = true; // If room not used, say true
             votes.add(roomVote);
         }
 
-        _votes = "";
-        itr = votes.iterator();
-        while (itr.hasNext())
-            _votes += Boolean.toString(itr.next());
+        _votes += Boolean.toString(votes.get(2)) + ",";
 
         this.log.prepare(xid, "Votes", _votes);
 
@@ -298,7 +298,7 @@ public class Middleware extends ResourceManager {
 
         if (this.middlewareMode == 5) {
             Trace.info("Crashing Middleware: xid=" + xid + " mode=" + this.middlewareMode);
-            Trace.info("Crashing after receiving making decision = " + decision);
+            Trace.info("Crashing after making decision = " + decision);
             System.exit(1);
         }
 
@@ -315,14 +315,14 @@ public class Middleware extends ResourceManager {
 
         if (resources.contains("Flight")) {
             try {
-                m_flightResourceManager.commit(xid);
-            }
-            catch (InvalidTransactionException e) {
-                Trace.info(xid + " already committed at flight rm");
-            }
-            catch (Exception e) {
-                if (connectServer("Flight", s_flightServer.host, s_flightServer.port, s_flightServer.name))
+                try {
                     m_flightResourceManager.commit(xid);
+                } catch (Exception e) {
+                    if (connectServer("Flight", s_flightServer.host, s_flightServer.port, s_flightServer.name))
+                        m_flightResourceManager.commit(xid);
+                }
+            } catch(Exception e) {
+                Trace.info(xid + " already committed at flight rm");
             }
         }
 
@@ -334,27 +334,29 @@ public class Middleware extends ResourceManager {
 
         if (resources.contains("Car")) {
             try {
-                m_carResourceManager.commit(xid);
-            }
-            catch (InvalidTransactionException e) {
-                Trace.info(xid + " already committed at car rm");
-            }
-            catch (Exception e) {
-                if (connectServer("Car", s_carServer.host, s_carServer.port, s_carServer.name))
+                try {
                     m_carResourceManager.commit(xid);
+                }
+                catch (Exception e) {
+                    if (connectServer("Car", s_carServer.host, s_carServer.port, s_carServer.name))
+                        m_carResourceManager.commit(xid);
+                }
+            } catch(Exception e) {
+                Trace.info(xid + " already committed at car rm");
             }
         }
 
         if (resources.contains("Room")) {
             try {
-                m_roomResourceManager.commit(xid);
-            }
-            catch (InvalidTransactionException e) {
-                Trace.info(xid + " already committed at room rm");
-            }
-            catch (Exception e) {
-                if (connectServer("Room", s_roomServer.host, s_roomServer.port, s_roomServer.name))
+                try {
                     m_roomResourceManager.commit(xid);
+                }
+                catch (Exception e) {
+                    if (connectServer("Room", s_roomServer.host, s_roomServer.port, s_roomServer.name))
+                        m_roomResourceManager.commit(xid);
+                }
+            } catch(Exception e) {
+                Trace.info(xid + " already committed at room rm");
             }
         }
 
@@ -1402,8 +1404,8 @@ public class Middleware extends ResourceManager {
 
     protected boolean connectServer(String type, String server, int port, String name)
     {
-        //int waitTime = 30 * 1000; // ms
-        int waitTime = 5 * 1000; // ms
+        int waitTime = 30 * 1000; // ms
+        //int waitTime = 5 * 1000; // ms
         int wait = 500;
         int loops = waitTime / wait;
         try {
@@ -1501,7 +1503,7 @@ public class Middleware extends ResourceManager {
         if (!tm.xidActive(xid))
             return tm.xidCommitted(xid);
         Transaction t = tm.readActiveData(xid);
-        Set<Boolean> votes = t.getVotes();
+        List<Boolean> votes = t.getVotes();
         while (tm.xidActive(xid) && votes.size() != 3) {
             try{Thread.sleep(500);}
             catch(Exception e){}

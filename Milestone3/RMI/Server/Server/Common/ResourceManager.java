@@ -675,8 +675,8 @@ public class ResourceManager implements IResourceManager
 	public boolean isActive(int xid) throws RemoteException {return false;}
 
     public boolean askMWActive(int xid) {
-        //int waitTime = 30 * 1000; // ms
-		int waitTime = 5 * 1000; // ms
+        int waitTime = 30 * 1000; // ms
+		//int waitTime = 5 * 1000; // ms
         int wait = 200;
         int loops = waitTime / wait;
         String name = this.mwName;

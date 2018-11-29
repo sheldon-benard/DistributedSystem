@@ -20,18 +20,28 @@ public class RMIResourceManager extends ResourceManager
 {
 	private static String s_serverName = "Server";
 	private static String s_rmiPrefix = "group7";
+	private static String s_MWHost = "localhost";
+	private static int s_MWPort = 1099;
+	private static String s_MWName = "Middleware";
 
 	public static void main(String args[])
 	{
-		if (args.length > 0)
+		if (args.length == 1)
 		{
 			s_serverName = args[0];
+
+		}
+
+		if (args.length > 1) {
+			s_serverName = args[0];
+			s_MWHost = args[1];
+			s_MWPort = Integer.parseInt(args[2]);
 		}
 			
 		// Create the RMI server entry
 		try {
 			// Create a new Server object
-			RMIResourceManager server = new RMIResourceManager(s_serverName);
+			RMIResourceManager server = new RMIResourceManager(s_serverName, s_rmiPrefix + s_MWName, s_MWHost, s_MWPort);
 
 			// Dynamically generate the stub (client proxy)
 			IResourceManager resourceManager = (IResourceManager)UnicastRemoteObject.exportObject(server, 0);
@@ -75,8 +85,8 @@ public class RMIResourceManager extends ResourceManager
 		}
 	}
 
-	public RMIResourceManager(String name)
+	public RMIResourceManager(String name, String mwname, String host, int port)
 	{
-		super(name);
+		super(name, mwname, host, port);
 	}
 }

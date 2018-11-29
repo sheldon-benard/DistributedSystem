@@ -3,6 +3,7 @@ package Server.Common;
 import Server.JSON.*;
 import Server.JSON.parser.*;
 import Server.Transactions.*;
+import java.io.*;
 
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -15,7 +16,7 @@ import java.util.*;
 
 public class Logger {
     // File names
-    private String committed_f;
+    //private String committed_f;
     private String in_progress_f;
     private String master_f;
     private String name;
@@ -34,7 +35,7 @@ public class Logger {
     public Logger(String name, ResourceManager rm, RMHashMap committed_data) {
         String prefix = "Server/Logs/";
         this.name = name;
-        this.committed_f =  prefix + name + "-committed.json";
+        //this.committed_f =  prefix + name + "-committed.json";
         this.in_progress_f = prefix + name + "-in-progress.json";
         this.master_f = prefix + name + "-master.json";
         this.rm = rm;
@@ -72,6 +73,8 @@ public class Logger {
 
     public Set<String> getLocks() {
         JSONObject locks = (JSONObject)this.master.get("locks");
+        if (locks == null)
+            return new HashSet<String>();
         Set<String> lock_set = new HashSet<String>();
         for (Object _xid : locks.keySet()) {
             String xid = _xid.toString();
@@ -90,13 +93,146 @@ public class Logger {
     }
 
     public void setupEnv() {
-        if (!initial_setup(this.committed_f)) recover_committed();
-        if (!initial_setup(this.in_progress_f)) recover_in_progress();
+        Trace.info("setupEnv called");
+        Trace.info(this.master_f);
         if (!initial_setup(this.master_f)) recover_master();
+        if (this.master.get("mode") != null && Integer.parseInt(this.master.get("mode").toString()) == 5){
+            Trace.info("Mode=" + 5 + " abort during recovery");
+            setMode(0);
+            System.exit(1);
+        }
+        Trace.info(this.getCommitted_f());
+        if (!initial_setup(this.getCommitted_f())) recover_committed();
+        Trace.info(this.in_progress_f);
+        if (!initial_setup(this.in_progress_f)) recover_in_progress();
+
+        if (!this.name.equals("Middleware")) {
+            Set<Integer> checked = recover_2pc();
+            recover_Transactions(checked);
+        }
+        else {
+            recover_middleware();
+        }
     }
 
-    public void flush_committed() {
-        String file_name = this.committed_f;
+    private void recover_middleware() {
+        for (Object _key : this.master.keySet()) {
+            String key = _key.toString();
+            if (key.equals("locks") || key.equals("mode") || key.equals("lastCommit"))
+                continue;
+
+            int xid = Integer.parseInt(key);
+            if (tm.xidActive(xid)) {
+                JSONObject obj = (JSONObject)this.master.get(key);
+                if (obj.get("Prepared") == null) continue;
+                if (obj.get("Votes") != null) {
+                    //System.out.println(obj.get("Votes").toString());
+                    String[] votes = obj.get("Votes").toString().split(",");
+                    for (String vote : votes) {
+                        if (vote.equals("")) continue;
+                        boolean v = Boolean.parseBoolean(vote);
+                        tm.readActiveData(xid).getVotes().add(v);
+                    }
+                }
+//                try { rm.commit(xid); }
+//                catch (Exception e) {}
+            }
+        }
+    }
+
+    public void removePrepared(int xid) {
+        this.master.remove(String.valueOf(xid));
+        flush_to_file(this.master, this.master_f);
+    }
+
+    public void lastCommitted(int xid) {
+        String prevCommitted = this.master.get("lastCommit").toString();
+        this.master.put("lastCommit", xid);
+        flush_to_file(this.master, this.master_f);
+        String filePath = this.getCommitted_f(Integer.parseInt(prevCommitted));
+        File file = new File(filePath);
+
+        if(file.delete())
+        {
+            System.out.println("File deleted successfully: " + filePath);
+        }
+        else
+        {
+            System.out.println("Failed to delete the file: " + filePath);
+        }
+    }
+
+    private Set<Integer> recover_2pc() {
+        Set<Integer> checked = new HashSet<Integer>();
+        Set<Object> keySet = new HashSet<Object>();
+        for (Object _key : this.master.keySet()) {
+            keySet.add(_key);
+        }
+
+        for (Object _key : keySet) {
+            String key = _key.toString();
+            if (key.equals("locks") || key.equals("mode") || key.equals("lastCommit"))
+                continue;
+
+            // deal with prepared transactions first, since these are more time pressing
+            int xid = Integer.parseInt(key);
+            if (tm.xidActiveAndPrepared(xid)) {
+                checked.add(xid);
+                JSONObject obj = (JSONObject)this.master.get(key);
+                rm.recover(xid, obj.get("Prepared"), obj.get("Decision"), obj.get("Sent"), obj.get("MWDecision"));
+            }
+        }
+
+
+        for (Object _key : keySet) {
+            String key = _key.toString();
+            if (key.equals("locks") || key.equals("mode") || key.equals("lastCommit"))
+                continue;
+
+            // deal with non prepared transactions -> invalid transaction or aborted already
+            int xid = Integer.parseInt(key);
+            if (checked.contains(xid)) continue;
+            if (!tm.xidActiveAndPrepared(xid)) {
+                JSONObject obj = (JSONObject)this.master.get(key);
+                if (obj.get("Prepared") == null) continue;
+                checked.add(xid);
+                rm.recover(xid, obj.get("Prepared"), obj.get("Decision"), obj.get("Sent"), obj.get("MWDecision"));
+            }
+        }
+        return checked;
+    }
+
+    private void recover_Transactions(Set<Integer> checked) {
+        // Check to see if transactions failed during regular operations
+        for (Integer key : tm.getActiveData().keySet()) {
+            if (checked.contains(key)) continue;
+            Trace.info(key + " is a current transaction; it could have failed during the middleware coordination; check that it is still active");
+            if (!rm.askMWActive(key)) {
+                Trace.info(key + " is not active at the middleware, so abort");
+                // decision to abort
+                try {rm.abort(key);}
+                catch(Exception e) {}
+            }
+            else {
+                Trace.info(key + " active at MW; continue");
+            }
+        }
+    }
+
+    public String getCommitted_f() {
+        String lastCommitted = this.master.get("lastCommit").toString();
+        String f = "Server/Logs/" + this.name + "-committed_" + lastCommitted + ".json";
+        return f;
+    }
+
+    public String getCommitted_f(int xid) {
+        String lastCommitted = this.master.get("lastCommit").toString();
+        String f = "Server/Logs/" + this.name + "-committed_" + xid + ".json";
+        return f;
+    }
+
+    public void flush_committed(int xid) {
+        String file_name = this.getCommitted_f(xid);
 
         if (this.name.equals("Middleware"))
             // Middleware holds the customer resource manager -> flush this
@@ -276,7 +412,7 @@ public class Logger {
 
         for (Object a : active.keySet()) {
             int tid = Integer.parseInt(a.toString());
-            int timetolive = Integer.parseInt(((JSONObject)active.get(a)).get("timetolive").toString());
+            int timetolive = Integer.parseInt(((JSONObject)active.get(a)).get("timetolive").toString()) / 1000; // expects seconds
             boolean isprepared = Boolean.parseBoolean(((JSONObject)active.get(a)).get("isprepared").toString());
             Transaction t = new Transaction(tid, timetolive);
             t.setIsPrepared(isprepared);
@@ -345,36 +481,54 @@ public class Logger {
                     data.put(key, customer);
                 }
             }
-            System.out.println(tm);
-            System.out.println(tid);
-            System.out.println(t);
+            //System.out.println(tm);
+            //System.out.println(tid);
+            //System.out.println(t);
             this.tm.writeActiveData(tid, t);
         }
 
 
     }
 
+    public void prepare(int _xid, String state, String data){
+        String xid = String.valueOf(_xid);
+
+        if (this.master.get(xid) == null)
+            this.master.put(xid, new JSONObject());
+        ((JSONObject)this.master.get(xid)).put(state, data);
+        flush_to_file(this.master, this.master_f);
+    }
+
+    public void setMode(int mode){
+        this.master.put("mode",mode);
+        flush_to_file(this.master, this.master_f);
+    }
 
 
     private void recover_master() {
         //this.in_progress is file object
-        JSONObject obj = this.master;
+        if (this.master.get("locks") == null)
+            this.master.put("locks",new JSONObject());
 
-        if (obj.toString().equals("{}")) return;
+        if (this.master.get("lastCommit") == null)
+            this.master.put("lastCommit",0);
+
+        if (this.master.get("mode") == null)
+            this.master.put("mode",0);
     }
 
-    public void write_committed(int xid) throws InvalidTransactionException{
-        // Grab in progress array
-        JSONArray a = (JSONArray)this.in_progress.get(xid);
-        JSONArray b = (JSONArray)this.committed.get(xid);
-        if (a == null) throw new InvalidTransactionException(xid, "Transaction not in progress");
-        if (b != null) throw new InvalidTransactionException(xid, "Transaction already committed");
-
-        this.committed.put(xid, a);
-        this.in_progress.remove(xid);
-        flush_to_file(this.committed, this.committed_f);
-        flush_to_file(this.in_progress, this.in_progress_f);
-    }
+//    public void write_committed(int xid) throws InvalidTransactionException{
+//        // Grab in progress array
+//        JSONArray a = (JSONArray)this.in_progress.get(xid);
+//        JSONArray b = (JSONArray)this.committed.get(xid);
+//        if (a == null) throw new InvalidTransactionException(xid, "Transaction not in progress");
+//        if (b != null) throw new InvalidTransactionException(xid, "Transaction already committed");
+//
+//        this.committed.put(xid, a);
+//        this.in_progress.remove(xid);
+//        flush_to_file(this.committed, this.committed_f);
+//        flush_to_file(this.in_progress, this.in_progress_f);
+//    }
 
     // True if file setup for the first time; False otherwise
     private boolean initial_setup(String file) {
@@ -385,14 +539,15 @@ public class Logger {
 
             JSONObject jsonObject = (JSONObject) obj;
 
-            if (file.contains("committed.json"))
+            if (file.contains("committed") && file.contains(".json"))
                 this.committed = jsonObject;
             else if (file.contains("in-progress.json"))
                 this.in_progress = jsonObject;
-            else if (file.contains("master.json"))
+            else if (file.contains("master.json")) {
                 this.master = jsonObject;
+            }
             else {
-                Trace.error("Unknown file");
+                Trace.error("Unknown file=" + file);
                 System.exit(-1);
             }
             Trace.info(file + " found: Recovery process initiated");
@@ -401,9 +556,9 @@ public class Logger {
         } catch (FileNotFoundException e) {
             JSONObject o = new JSONObject();
             Trace.info(file + " not found: creating log file");
-            if (file.contains("committed.json")) {
+            if (file.contains("committed") && file.contains(".json")) {
                 this.committed = new JSONObject();
-                flush_to_file(o, this.committed_f);
+                flush_to_file(o, this.getCommitted_f());
             }
             else if (file.contains("in-progress.json")) {
                 this.in_progress = new JSONObject();
@@ -412,10 +567,12 @@ public class Logger {
             else if (file.contains("master.json")) {
                 this.master = new JSONObject();
                 this.master.put("locks", new JSONObject());
-                flush_to_file(o, this.master_f);
+                this.master.put("lastCommit", 0);
+                this.master.put("mode",0);
+                flush_to_file(this.master, this.master_f);
             }
             else {
-                Trace.error("Unknown file");
+                Trace.error("Unknown file=" + file);
                 System.exit(-1);
             }
         } catch (IOException e) {

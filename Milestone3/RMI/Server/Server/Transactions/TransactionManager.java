@@ -10,6 +10,8 @@ public class TransactionManager {
     public TransactionManager () {
     }
 
+
+
     public boolean xidActive(int xid) {
         synchronized(activeTransactions) {
             synchronized (inactiveTransactions) {
@@ -18,6 +20,28 @@ public class TransactionManager {
                 return keyset.contains(xid) && !inkeyset.contains(xid);
             }
         }
+    }
+
+    public boolean xidExists(int xid) {
+        synchronized(activeTransactions) {
+            synchronized (inactiveTransactions) {
+                Set<Integer> keyset = activeTransactions.keySet();
+                Set<Integer> inkeyset = inactiveTransactions.keySet();
+                return keyset.contains(xid) || inkeyset.contains(xid);
+            }
+        }
+    }
+
+    public boolean xidCommitted(int xid) {
+        synchronized (inactiveTransactions) {
+            return inactiveTransactions.get(xid);
+        }
+    }
+
+    public boolean xidActiveAndPrepared(int xid) {
+        if (xidActive(xid))
+            return xidPrepared(xid);
+        return false;
     }
 
     public boolean xidPrepared(int xid) {

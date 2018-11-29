@@ -13,6 +13,8 @@ public class Transaction {
     private int timeToLive; // in milliseconds
     private boolean isPrepared = false;
 
+    private List<Boolean> votes = new ArrayList();
+
     public boolean getIsPrepared() {return this.isPrepared;}
     public void setIsPrepared(boolean a) {this.isPrepared = a;}
 
@@ -22,13 +24,17 @@ public class Transaction {
         this.timeToLive = timeToLive * 1000;
     }
 
+    public List<Boolean> getVotes() {
+        return this.votes;
+    }
+
     public Transaction (int xid) {
         this.xid = xid;
     }
 
     public boolean expired() {
         long time = (new Date()).getTime();
-        if (time > lastAction + timeToLive)
+        if (time > lastAction + timeToLive && !isPrepared) // don't expire if in 2pc!
             return true;
         return false;
     }

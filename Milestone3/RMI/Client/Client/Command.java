@@ -32,6 +32,9 @@ public enum Command {
 	Analytics("Print a list of all reservable items whose quantities are less than (or equal to) the UpperBound provided", "<xid>,<UpperBound>"),
 
 	Start("Start a Transaction (returns transaction xid)", ""),
+	CrashResourceManager("Set Crash mode of RM", "<RM Name>,<mode>"),
+	CrashMiddleware("Set Crash mode of MW", "<mode>"),
+	ResetCrashes("Reset all crash modes", ""),
 	Commit("Commit a transaction", "<xid>"),
 	Abort("Aborts a transaction", "<xid>"),
 	Shutdown("Shutdown the distributed architecture", ""),

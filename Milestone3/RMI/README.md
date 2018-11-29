@@ -5,9 +5,9 @@ To run the Resource Managers (RMI registry port: 1099)
 ```
 cd Server/
 make
-./run_server.sh Flights
-./run_server.sh Cars
-./run_server.sh Rooms
+./run_server.sh Flights <<Middleware IP>> 1099
+./run_server.sh Cars <<Middleware IP>> 1099
+./run_server.sh Rooms <<Middleware IP>> 1099
 ```
 
 To run the Middleware

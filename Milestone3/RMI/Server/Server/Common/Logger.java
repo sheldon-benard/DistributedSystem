@@ -498,6 +498,8 @@ public class Logger {
 
         if (obj.toString().equals("{}")) {
             this.master.put("locks",new JSONObject());
+            this.master.put("lastCommit",0);
+            this.master.put("mode",0);
         };
     }
 
@@ -554,6 +556,7 @@ public class Logger {
                 this.master = new JSONObject();
                 this.master.put("locks", new JSONObject());
                 this.master.put("lastCommit", 0);
+                this.master.put("mode",0);
                 flush_to_file(o, this.master_f);
             }
             else {

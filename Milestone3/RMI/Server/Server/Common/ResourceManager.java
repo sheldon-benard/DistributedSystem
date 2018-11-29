@@ -556,7 +556,8 @@ public class ResourceManager implements IResourceManager
 				m_data.put(key, m.get(key));
 			}
 		}
-		flush_committed();
+		flush_committed(xid);
+		this.log.lastCommitted(xid);
 		// Move to inactive transactions
 		tm.writeActiveData(xid, null);
 		tm.writeInactiveData(xid, new Boolean(true));
@@ -565,8 +566,8 @@ public class ResourceManager implements IResourceManager
 		return true;
 	}
 
-	protected void flush_committed() {
-		log.flush_committed();
+	protected void flush_committed(int xid) {
+		log.flush_committed(xid);
 	}
 	protected void flush_in_progress() {
 		log.flush_in_progress();

@@ -372,7 +372,7 @@ public class Middleware extends ResourceManager {
             }
         }
         endTransaction(xid, true);
-        this.flush_committed();
+        this.flush_committed(xid);
         this.flush_in_progress();
         this.log.lastCommitted(xid);
         this.log.removePrepared(xid);

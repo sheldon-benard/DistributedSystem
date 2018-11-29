@@ -3,6 +3,7 @@ package Server.Common;
 import Server.JSON.*;
 import Server.JSON.parser.*;
 import Server.Transactions.*;
+import java.io.*;
 
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -15,7 +16,7 @@ import java.util.*;
 
 public class Logger {
     // File names
-    private String committed_f;
+    //private String committed_f;
     private String in_progress_f;
     private String master_f;
     private String name;
@@ -34,7 +35,7 @@ public class Logger {
     public Logger(String name, ResourceManager rm, RMHashMap committed_data) {
         String prefix = "Server/Logs/";
         this.name = name;
-        this.committed_f =  prefix + name + "-committed.json";
+        //this.committed_f =  prefix + name + "-committed.json";
         this.in_progress_f = prefix + name + "-in-progress.json";
         this.master_f = prefix + name + "-master.json";
         this.rm = rm;
@@ -99,7 +100,7 @@ public class Logger {
             setMode(0);
             System.exit(1);
         }
-        if (!initial_setup(this.committed_f)) recover_committed();
+        if (!initial_setup(this.getCommitted_f())) recover_committed();
         if (!initial_setup(this.in_progress_f)) recover_in_progress();
 
         if (!this.name.equals("Middleware")) {
@@ -140,8 +141,20 @@ public class Logger {
     }
 
     public void lastCommitted(int xid) {
+        String prevCommitted = this.master.get("lastCommit").toString();
         this.master.put("lastCommit", xid);
         flush_to_file(this.master, this.master_f);
+        String filePath = this.getCommitted_f(Integer.parseInt(prevCommitted));
+        File file = new File(filePath);
+
+        if(file.delete())
+        {
+            System.out.println("File deleted successfully: " + filePath);
+        }
+        else
+        {
+            System.out.println("Failed to delete the file: " + filePath);
+        }
     }
 
     private Set<Integer> recover_2pc() {
@@ -195,8 +208,20 @@ public class Logger {
         }
     }
 
-    public void flush_committed() {
-        String file_name = this.committed_f;
+    public String getCommitted_f() {
+        String lastCommitted = this.master.get("lastCommit").toString();
+        String f = "Server/Logs/" + this.name + "-committed_" + lastCommitted + ".json";
+        return getCommitted_f();
+    }
+
+    public String getCommitted_f(int xid) {
+        String lastCommitted = this.master.get("lastCommit").toString();
+        String f = "Server/Logs/" + this.name + "-committed_" + xid + ".json";
+        return getCommitted_f();
+    }
+
+    public void flush_committed(int xid) {
+        String file_name = this.getCommitted_f(xid);
 
         if (this.name.equals("Middleware"))
             // Middleware holds the customer resource manager -> flush this
@@ -476,18 +501,18 @@ public class Logger {
         };
     }
 
-    public void write_committed(int xid) throws InvalidTransactionException{
-        // Grab in progress array
-        JSONArray a = (JSONArray)this.in_progress.get(xid);
-        JSONArray b = (JSONArray)this.committed.get(xid);
-        if (a == null) throw new InvalidTransactionException(xid, "Transaction not in progress");
-        if (b != null) throw new InvalidTransactionException(xid, "Transaction already committed");
-
-        this.committed.put(xid, a);
-        this.in_progress.remove(xid);
-        flush_to_file(this.committed, this.committed_f);
-        flush_to_file(this.in_progress, this.in_progress_f);
-    }
+//    public void write_committed(int xid) throws InvalidTransactionException{
+//        // Grab in progress array
+//        JSONArray a = (JSONArray)this.in_progress.get(xid);
+//        JSONArray b = (JSONArray)this.committed.get(xid);
+//        if (a == null) throw new InvalidTransactionException(xid, "Transaction not in progress");
+//        if (b != null) throw new InvalidTransactionException(xid, "Transaction already committed");
+//
+//        this.committed.put(xid, a);
+//        this.in_progress.remove(xid);
+//        flush_to_file(this.committed, this.committed_f);
+//        flush_to_file(this.in_progress, this.in_progress_f);
+//    }
 
     // True if file setup for the first time; False otherwise
     private boolean initial_setup(String file) {
@@ -519,7 +544,7 @@ public class Logger {
             Trace.info(file + " not found: creating log file");
             if (file.contains("committed.json")) {
                 this.committed = new JSONObject();
-                flush_to_file(o, this.committed_f);
+                flush_to_file(o, this.getCommitted_f());
             }
             else if (file.contains("in-progress.json")) {
                 this.in_progress = new JSONObject();
@@ -528,6 +553,7 @@ public class Logger {
             else if (file.contains("master.json")) {
                 this.master = new JSONObject();
                 this.master.put("locks", new JSONObject());
+                this.master.put("lastCommit", 0);
                 flush_to_file(o, this.master_f);
             }
             else {

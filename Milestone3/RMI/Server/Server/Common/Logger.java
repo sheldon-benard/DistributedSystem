@@ -211,13 +211,13 @@ public class Logger {
     public String getCommitted_f() {
         String lastCommitted = this.master.get("lastCommit").toString();
         String f = "Server/Logs/" + this.name + "-committed_" + lastCommitted + ".json";
-        return getCommitted_f();
+        return f;
     }
 
     public String getCommitted_f(int xid) {
         String lastCommitted = this.master.get("lastCommit").toString();
         String f = "Server/Logs/" + this.name + "-committed_" + xid + ".json";
-        return getCommitted_f();
+        return f;
     }
 
     public void flush_committed(int xid) {
